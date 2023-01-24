@@ -1,4 +1,9 @@
-use crate::{Error, Ref, Result, Symbol};
+use std::num::{NonZeroU32, TryFromIntError};
+
+use crate::{
+    pack::{Pack, Unpacked},
+    Error, Ref, Result, Symbol,
+};
 
 #[derive(Debug, Copy, Clone, PartialEq, PartialOrd)]
 pub enum Value {
@@ -54,6 +59,45 @@ impl TryFrom<Value> for Ref {
         match value {
             Value::Ref(ref_) => Ok(ref_),
             _ => Err(format!("expected ref, got {:?}", value)),
+        }
+    }
+}
+
+fn try_u32_from_u64(n: u64) -> Result<u32> {
+    n.try_into().map_err(|err: TryFromIntError| err.to_string())
+}
+
+impl Pack for Value {
+    type Error = String;
+
+    fn as_unpacked(&self) -> Unpacked {
+        match *self {
+            Value::Number(f) => Unpacked::Float(f),
+            Value::Symbol(symbol) => {
+                let index = u32::from(NonZeroU32::from(symbol));
+                Unpacked::Tagged(0, index.into())
+            }
+            Value::Ref(ref_) => {
+                let index: u32 = ref_.into();
+                Unpacked::Tagged(1, index.into())
+            }
+        }
+    }
+
+    fn try_from_unpacked(unpacked: Unpacked) -> Result<Value> {
+        match unpacked {
+            Unpacked::Float(f) => Ok(f.into()),
+            Unpacked::Tagged(0, n) => {
+                let index = try_u32_from_u64(n)?;
+                let symbol = Symbol::try_from(index)?;
+                Ok(symbol.into())
+            }
+            Unpacked::Tagged(1, n) => {
+                let index = try_u32_from_u64(n)?;
+                let ref_ = Ref::from(index);
+                Ok(ref_.into())
+            }
+            Unpacked::Tagged(t, _) => Err(format!("unexpected tag: {}", t)),
         }
     }
 }
