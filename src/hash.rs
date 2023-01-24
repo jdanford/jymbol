@@ -1,6 +1,5 @@
 use std::{
     hash::Hasher,
-    num::NonZeroU32,
     ops::{Deref, DerefMut},
 };
 
@@ -25,10 +24,6 @@ impl<H: Hasher> DerefMut for ValueHasher<'_, H> {
     }
 }
 
-fn write_nonzero_u32<H: Hasher>(state: &mut H, n: NonZeroU32) {
-    state.write_u32(n.into());
-}
-
 impl<'a, H: Hasher> ValueHasher<'a, H> {
     pub fn new(hasher: H, vm: &'a VM) -> Self {
         ValueHasher { hasher, vm }
@@ -48,8 +43,8 @@ impl<'a, H: Hasher> ValueHasher<'a, H> {
         }
     }
 
-    fn write_type(&mut self, symbol: Symbol) {
-        write_nonzero_u32(&mut **self, symbol.into());
+    fn write_type(&mut self, type_: Symbol) {
+        self.write_u32(type_.into());
     }
 
     fn write_number(&mut self, f: f64) {
@@ -59,7 +54,7 @@ impl<'a, H: Hasher> ValueHasher<'a, H> {
 
     fn write_symbol(&mut self, symbol: Symbol) {
         self.write_type(*symbol::SYMBOL);
-        write_nonzero_u32(&mut **self, symbol.into());
+        self.write_u32(symbol.into());
     }
 
     fn write_ref(&mut self, ref_: Ref) -> Result<()> {

@@ -1,4 +1,4 @@
-use crate::{Ref, Result, Value, VM, check_count, symbol};
+use crate::{check_count, symbol, Ref, Result, Value, VM};
 
 #[allow(clippy::module_name_repetitions)]
 pub struct ListIterator<'a> {

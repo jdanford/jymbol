@@ -23,9 +23,10 @@ impl Heap {
     }
 
     fn get_record(&self, ref_: Ref) -> Result<&Record> {
+        let index = u32::from(ref_);
         self.records
-            .get(ref_.into_u32() as usize)
-            .ok_or_else(|| format!("invalid reference: {}", ref_.into_u32()))
+            .get(index as usize)
+            .ok_or_else(|| format!("invalid reference: {}", index))
     }
 
     fn slice_from_record(&self, record: &Record) -> &[Value] {
@@ -35,9 +36,7 @@ impl Heap {
     }
 
     pub fn alloc(&mut self, type_: Symbol, values: Vec<Value>) -> Result<Ref> {
-        // TODO: actually check for truncation
-        #[allow(clippy::cast_possible_truncation)]
-        let index = self.records.len() as u32;
+        let index = u32::try_from(self.records.len()).map_err(|err| err.to_string())?;
         let offset = self.values.len();
         let count = values.len();
         let record = Record {

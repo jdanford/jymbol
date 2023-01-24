@@ -16,6 +16,7 @@ mod error;
 mod hash;
 mod heap;
 mod list;
+mod pack;
 mod parser;
 mod read;
 mod reference;

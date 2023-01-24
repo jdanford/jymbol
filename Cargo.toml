@@ -8,6 +8,6 @@ authors = ["Jordan Danford <jordandanford@gmail.com>"]
 chumsky = "0.8"
 im = "15"
 lazy_static = "1.4"
-logos = "0.12.1"
+logos = "0.12"
 symbol_table = { version = "0.3", features = ["global"] }
 unescaper = "0.1"

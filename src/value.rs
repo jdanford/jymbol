@@ -8,19 +8,19 @@ pub enum Value {
 }
 
 impl From<f64> for Value {
-    fn from(f: f64) -> Value {
+    fn from(f: f64) -> Self {
         Value::Number(f)
     }
 }
 
 impl From<Symbol> for Value {
-    fn from(symbol: Symbol) -> Value {
+    fn from(symbol: Symbol) -> Self {
         Value::Symbol(symbol)
     }
 }
 
 impl From<Ref> for Value {
-    fn from(ref_: Ref) -> Value {
+    fn from(ref_: Ref) -> Self {
         Value::Ref(ref_)
     }
 }

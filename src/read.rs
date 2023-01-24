@@ -7,9 +7,9 @@ fn collect_parser_errors(errors: Vec<chumsky::error::Simple<char>>) -> String {
     error_strings.join("\n")
 }
 
-fn parse(input: &str) -> Result<Expr> {
+fn parse<S: AsRef<str>>(input: S) -> Result<Expr> {
     let parser = crate::parser::parser();
-    parser.parse(input).map_err(collect_parser_errors)
+    parser.parse(input.as_ref()).map_err(collect_parser_errors)
 }
 
 impl VM {
@@ -48,7 +48,7 @@ impl VM {
         }
     }
 
-    pub fn read(&mut self, input: &str) -> Result<Value> {
+    pub fn read<S: AsRef<str>>(&mut self, input: S) -> Result<Value> {
         let expr = parse(input)?;
         self.reify(expr)
     }
