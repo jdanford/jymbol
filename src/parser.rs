@@ -59,12 +59,12 @@ pub fn parser() -> impl Parser<char, Expr, Error = Simple<char>> {
         let exp = just('e')
             .or(just('E'))
             .chain(just('+').or(just('-')).or_not())
-            .chain::<char, _, _>(text::digits(10));
+            .chain(text::digits(10));
 
         let number = just('-')
             .or_not()
-            .chain::<char, _, _>(text::int(10))
-            .chain::<char, _, _>(frac.or_not().flatten())
+            .chain(text::int(10))
+            .chain(frac.or_not().flatten())
             .chain::<char, _, _>(exp.or_not().flatten())
             .collect::<String>()
             .map(expr_number)

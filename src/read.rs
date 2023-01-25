@@ -1,8 +1,8 @@
-use chumsky::Parser;
+use chumsky::{error::Simple, Parser};
 
 use crate::{parser::Expr, symbol, Result, Symbol, Value, VM};
 
-fn collect_parser_errors(errors: Vec<chumsky::error::Simple<char>>) -> String {
+fn collect_parser_errors(errors: Vec<Simple<char>>) -> String {
     let error_strings: Vec<String> = errors.into_iter().map(|err| err.to_string()).collect();
     error_strings.join("\n")
 }
@@ -20,8 +20,8 @@ impl VM {
 
     fn reify(&mut self, expr: Expr) -> Result<Value> {
         match expr {
-            Expr::Number(f) => Ok(Value::Number(f)),
-            Expr::Symbol(s) => Ok(Value::Symbol(s)),
+            Expr::Number(n) => Ok(Value::Number(n)),
+            Expr::Symbol(symbol) => Ok(Value::Symbol(symbol)),
             Expr::Quote(inner) => {
                 let value = self.reify(*inner)?;
                 self.alloc_quote(*symbol::QUOTE, value)

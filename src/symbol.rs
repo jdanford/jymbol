@@ -2,7 +2,7 @@
 
 use std::{
     fmt::{self, Debug, Display, Formatter},
-    num::{NonZeroU32, TryFromIntError},
+    num::NonZeroU32,
     str::FromStr,
 };
 
@@ -11,11 +11,7 @@ use symbol_table::SymbolTable;
 
 use crate::Result;
 
-lazy_static! {
-    static ref GLOBAL_TABLE: SymbolTable = SymbolTable::new();
-}
-
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Symbol(symbol_table::Symbol);
 
 impl From<NonZeroU32> for Symbol {
@@ -42,14 +38,14 @@ impl TryFrom<u32> for Symbol {
     fn try_from(value: u32) -> Result<Self> {
         let i: NonZeroU32 = value
             .try_into()
-            .map_err(|err: TryFromIntError| err.to_string())?;
+            .map_err(|_| "expected non-zero value".to_string())?;
         Ok(i.into())
     }
 }
 
 impl Symbol {
-    pub fn new<S: AsRef<str>>(string: S) -> Self {
-        string.as_ref().into()
+    pub fn new<S: AsRef<str>>(s: S) -> Self {
+        s.as_ref().into()
     }
 
     #[must_use]
@@ -58,29 +54,33 @@ impl Symbol {
     }
 }
 
+lazy_static! {
+    static ref GLOBAL_TABLE: SymbolTable = SymbolTable::new();
+}
+
 impl From<&str> for Symbol {
-    fn from(string: &str) -> Self {
-        Symbol(GLOBAL_TABLE.intern(string))
+    fn from(s: &str) -> Self {
+        Symbol(GLOBAL_TABLE.intern(s))
     }
 }
 
 impl From<String> for Symbol {
-    fn from(string: String) -> Self {
-        Symbol(GLOBAL_TABLE.intern(&string))
+    fn from(s: String) -> Self {
+        Symbol(GLOBAL_TABLE.intern(&s))
     }
 }
 
 impl From<&String> for Symbol {
-    fn from(string: &String) -> Self {
-        Symbol(GLOBAL_TABLE.intern(string))
+    fn from(s: &String) -> Self {
+        Symbol(GLOBAL_TABLE.intern(s))
     }
 }
 
 impl FromStr for Symbol {
     type Err = std::convert::Infallible;
 
-    fn from_str(string: &str) -> std::result::Result<Self, Self::Err> {
-        Ok(string.into())
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        Ok(s.into())
     }
 }
 

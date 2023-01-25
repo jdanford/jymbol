@@ -4,12 +4,6 @@
     allow(clippy::missing_docs_in_private_items, clippy::missing_errors_doc)
 )]
 
-extern crate chumsky;
-extern crate im;
-extern crate lazy_static;
-extern crate logos;
-extern crate symbol_table;
-
 mod check;
 mod env;
 mod error;

@@ -1,4 +1,4 @@
-use std::num::{NonZeroU32, TryFromIntError};
+use std::num::NonZeroU32;
 
 use crate::{
     pack::{Pack, Unpacked},
@@ -64,8 +64,12 @@ impl TryFrom<Value> for Ref {
 }
 
 fn try_u32_from_u64(n: u64) -> Result<u32> {
-    n.try_into().map_err(|err: TryFromIntError| err.to_string())
+    n.try_into()
+        .map_err(|_| "value is too large to fit in u32".to_string())
 }
+
+const SYMBOL_TAG: u8 = 0;
+const REF_TAG: u8 = 1;
 
 impl Pack for Value {
     type Error = String;
@@ -75,11 +79,11 @@ impl Pack for Value {
             Value::Number(f) => Unpacked::Float(f),
             Value::Symbol(symbol) => {
                 let index = u32::from(NonZeroU32::from(symbol));
-                Unpacked::Tagged(0, index.into())
+                Unpacked::Tagged(SYMBOL_TAG, index.into())
             }
             Value::Ref(ref_) => {
                 let index: u32 = ref_.into();
-                Unpacked::Tagged(1, index.into())
+                Unpacked::Tagged(REF_TAG, index.into())
             }
         }
     }
@@ -87,12 +91,12 @@ impl Pack for Value {
     fn try_from_unpacked(unpacked: Unpacked) -> Result<Value> {
         match unpacked {
             Unpacked::Float(f) => Ok(f.into()),
-            Unpacked::Tagged(0, n) => {
+            Unpacked::Tagged(SYMBOL_TAG, n) => {
                 let index = try_u32_from_u64(n)?;
                 let symbol = Symbol::try_from(index)?;
                 Ok(symbol.into())
             }
-            Unpacked::Tagged(1, n) => {
+            Unpacked::Tagged(REF_TAG, n) => {
                 let index = try_u32_from_u64(n)?;
                 let ref_ = Ref::from(index);
                 Ok(ref_.into())
