@@ -42,7 +42,7 @@ impl VM {
     #[allow(clippy::unused_self)]
     fn eval_symbol(&self, env: &Env, symbol: Symbol) -> Result<Value> {
         env.get(symbol)
-            .ok_or_else(|| format!("undefined symbol: {}", symbol))
+            .ok_or_else(|| format!("undefined symbol: {symbol}",))
     }
 
     fn eval_ref(&mut self, env: &Env, ref_: Ref) -> Result<Value> {
@@ -60,7 +60,7 @@ impl VM {
             let body = values[1];
             self.apply_fn(env, params, args, body)
         } else {
-            Err(format!("can't apply {}", type_))
+            Err(format!("can't apply {type_}",))
         }
     }
 
@@ -72,8 +72,7 @@ impl VM {
         let actual_arity = arg_results.len();
         if expected_arity != actual_arity {
             return Err(format!(
-                "expected {} arguments, got {}",
-                expected_arity, actual_arity
+                "expected {expected_arity} arguments, got {actual_arity}",
             ));
         }
 

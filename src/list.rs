@@ -23,7 +23,7 @@ impl<'a> ListIterator<'a> {
         } else if type_ == *symbol::NIL {
             Ok(None)
         } else {
-            Err(format!("expected list, got {}", type_))
+            Err(format!("expected list, got {type_}"))
         }
     }
 }

@@ -1,7 +1,7 @@
 // adapted from `symbol_table/src/global.rs`
 
 use std::{
-    fmt::{self, Debug, Display, Formatter},
+    fmt::{self, Display, Formatter},
     num::NonZeroU32,
     str::FromStr,
 };
@@ -11,7 +11,7 @@ use symbol_table::SymbolTable;
 
 use crate::Result;
 
-#[derive(Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub struct Symbol(symbol_table::Symbol);
 
 impl From<NonZeroU32> for Symbol {
@@ -90,15 +90,9 @@ impl From<Symbol> for &'static str {
     }
 }
 
-impl Debug for Symbol {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        Debug::fmt(self.as_str(), f)
-    }
-}
-
 impl Display for Symbol {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        Display::fmt(self.as_str(), f)
+        f.write_str(self.as_str())
     }
 }
 

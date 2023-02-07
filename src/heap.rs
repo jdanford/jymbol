@@ -1,13 +1,13 @@
 use crate::{check_count, check_type, symbol, Ref, Result, Symbol, Value};
 
-#[derive(Debug, Clone)]
+#[derive(Clone, Debug)]
 struct Record {
     type_: Symbol,
     count: usize,
     offset: usize,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone, Debug)]
 pub struct Heap {
     records: Vec<Record>,
     values: Vec<Value>,
@@ -26,7 +26,7 @@ impl Heap {
         let index = u32::from(ref_);
         self.records
             .get(index as usize)
-            .ok_or_else(|| format!("invalid reference: {}", index))
+            .ok_or_else(|| format!("invalid reference: {index}"))
     }
 
     fn slice_from_record(&self, record: &Record) -> &[Value] {
