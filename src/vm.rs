@@ -1,11 +1,15 @@
-use crate::{symbol, Env, Result, Value};
+use crate::{function::Function, symbol, Env, Result, Value};
 
-pub struct VM {}
+pub struct VM {
+    // ???
+}
 
 impl VM {
     #[must_use]
     pub fn new() -> Self {
-        VM {}
+        VM {
+            // ???
+        }
     }
 
     pub fn eval(&mut self, env: &Env, value: &Value) -> Result<Value> {
@@ -24,31 +28,17 @@ impl VM {
     }
 
     fn apply(&mut self, env: &Env, func_boxed: &Value, args: &Value) -> Result<Value> {
-        let func = func_boxed.as_compound()?;
-        if func.type_ == *symbol::FN {
-            func.check_len(3)?;
-            let fn_env = &func.values[0];
-            let params = &func.values[1];
-            let body = &func.values[2];
-            self.apply_fn(env, fn_env, params, args, body)
+        if let Value::Function(func) = func_boxed {
+            self.apply_function(env, func, args)
         } else {
-            Err(format!("can't apply {:?}", func.type_))
+            Err(format!("can't apply {func_boxed:?}"))
         }
     }
 
-    fn apply_fn(
-        &mut self,
-        call_env: &Env,
-        fn_env_boxed: &Value,
-        params: &Value,
-        args: &Value,
-        body: &Value,
-    ) -> Result<Value> {
-        let fn_env = fn_env_boxed.as_env()?;
-        let param_results: Vec<Result<Value>> = params.clone().into_iter().collect();
+    fn apply_function(&mut self, env: &Env, func: &Function, args: &Value) -> Result<Value> {
         let arg_results: Vec<Result<Value>> = args.clone().into_iter().collect();
 
-        let expected_arity = param_results.len();
+        let expected_arity = func.params.len();
         let actual_arity = arg_results.len();
         if expected_arity != actual_arity {
             return Err(format!(
@@ -56,18 +46,14 @@ impl VM {
             ));
         }
 
-        let mut new_env = (*fn_env).clone();
-        for (param_result, arg_result) in param_results.into_iter().zip(arg_results) {
-            let param = param_result?;
+        let mut new_env: Env = (*func.env).clone();
+        for (param, arg_result) in func.params.iter().zip(arg_results) {
             let arg = arg_result?;
-            if let Value::Symbol(param_symbol) = param {
-                let arg = arg.clone();
-                let value = self.eval(call_env, &arg)?;
-                new_env = new_env.update(param_symbol, value);
-            }
+            let value = self.eval(env, &arg)?;
+            new_env = new_env.update(*param, value);
         }
 
-        self.eval(&new_env, body)
+        self.eval(&new_env, &func.body)
     }
 }
 

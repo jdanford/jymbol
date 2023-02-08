@@ -7,6 +7,7 @@
 mod compound;
 mod env;
 mod error;
+mod function;
 mod hash;
 mod iterator;
 mod parser;

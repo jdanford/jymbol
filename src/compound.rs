@@ -12,6 +12,11 @@ pub struct Compound {
 
 impl Compound {
     #[must_use]
+    pub fn new(type_: Symbol, values: Vec<Value>) -> Self {
+        Compound { type_, values }
+    }
+
+    #[must_use]
     pub fn len(&self) -> usize {
         self.values.len()
     }

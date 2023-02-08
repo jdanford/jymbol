@@ -3,6 +3,7 @@
 use std::{
     fmt::{self, Debug, Display, Formatter},
     num::NonZeroU32,
+    result,
     str::FromStr,
 };
 
@@ -84,7 +85,7 @@ impl From<&String> for Symbol {
 impl FromStr for Symbol {
     type Err = std::convert::Infallible;
 
-    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+    fn from_str(s: &str) -> result::Result<Self, Self::Err> {
         Ok(s.into())
     }
 }
@@ -117,8 +118,8 @@ lazy_static! {
     pub static ref STRING: Symbol = Symbol::new("string");
     pub static ref REF: Symbol = Symbol::new("ref");
     pub static ref ENV: Symbol = Symbol::new("env");
-    pub static ref FN: Symbol = Symbol::new("fn");
-    pub static ref NATIVE_FN: Symbol = Symbol::new("native-fn");
+    pub static ref FUNCTION: Symbol = Symbol::new("function");
+    pub static ref NATIVE_FUNCTION: Symbol = Symbol::new("native-function");
     pub static ref QUOTE: Symbol = Symbol::new("quote");
     pub static ref QUASIQUOTE: Symbol = Symbol::new("quasiquote");
     pub static ref UNQUOTE: Symbol = Symbol::new("unquote");

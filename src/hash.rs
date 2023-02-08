@@ -1,6 +1,6 @@
 use std::{collections::hash_map::DefaultHasher, hash::Hasher};
 
-use crate::{symbol, Compound, Env, Result, Symbol, Value};
+use crate::{function::Function, symbol, Compound, Env, Result, Symbol, Value};
 
 pub trait ValueHasher: Hasher {
     fn write_value(&mut self, value: &Value) -> Result<()>;
@@ -34,6 +34,14 @@ pub trait ValueHasher: Hasher {
         Ok(())
     }
 
+    fn write_function(&mut self, func: &Function) -> Result<()> {
+        self.write_type(*symbol::FUNCTION);
+        // include more?
+        self.write_value(&func.body)?;
+
+        Ok(())
+    }
+
     fn write_compound(&mut self, compound: &Compound) -> Result<()> {
         self.write_type(compound.type_);
         for value in &compound.values {
@@ -60,6 +68,7 @@ impl<T: Hasher> ValueHasher for T {
                 Ok(())
             }
             Value::Env(env) => self.write_env(env),
+            Value::Function(func) => self.write_function(func),
             Value::Compound(compound) => self.write_compound(compound),
         }
     }

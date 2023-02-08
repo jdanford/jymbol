@@ -2,7 +2,7 @@ use std::fmt::{self, Debug, Display, Formatter};
 
 use gc::{Finalize, Gc, Trace};
 
-use crate::{symbol, Compound, Env, Error, Result, Symbol};
+use crate::{function::Function, symbol, Compound, Env, Error, Result, Symbol};
 
 #[derive(Clone, PartialEq, PartialOrd, Debug, Trace, Finalize)]
 pub enum Value {
@@ -10,6 +10,7 @@ pub enum Value {
     Symbol(Symbol),
     String(Gc<String>),
     Env(Gc<Env>),
+    Function(Gc<Function>),
     Compound(Gc<Compound>),
 }
 
@@ -17,6 +18,11 @@ impl Value {
     pub fn compound(type_: Symbol, values: Vec<Value>) -> Result<Value> {
         let compound = Compound { type_, values };
         Ok(Value::Compound(Gc::new(compound)))
+    }
+
+    pub fn function(env: Gc<Env>, params: Vec<Symbol>, body: Value) -> Result<Value> {
+        let func = Function::new(env, params, body);
+        Ok(Value::Function(Gc::new(func)))
     }
 
     pub fn cons(head: Value, tail: Value) -> Result<Value> {
@@ -54,6 +60,14 @@ impl Value {
             Ok(compound.clone())
         } else {
             Err(format!("expected compound, got {self:?}"))
+        }
+    }
+
+    pub fn as_function(&self) -> Result<Gc<Function>> {
+        if let Value::Function(func) = self {
+            Ok(func.clone())
+        } else {
+            Err(format!("expected function, got {self:?}"))
         }
     }
 }
@@ -116,8 +130,9 @@ impl Display for Value {
             }
             Value::Symbol(symbol) => Display::fmt(&symbol, f),
             Value::String(string) => Display::fmt(&string, f),
-            Value::Compound(compound) => Display::fmt(&compound, f),
             Value::Env(env) => Display::fmt(&env, f),
+            Value::Function(func) => Display::fmt(&func, f),
+            Value::Compound(compound) => Display::fmt(&compound, f),
         }
     }
 }
