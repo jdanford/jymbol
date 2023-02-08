@@ -1,18 +1,23 @@
 // adapted from `symbol_table/src/global.rs`
 
 use std::{
-    fmt::{self, Display, Formatter},
+    fmt::{self, Debug, Display, Formatter},
     num::NonZeroU32,
     str::FromStr,
 };
 
+use gc::{unsafe_empty_trace, Finalize, Trace};
 use lazy_static::lazy_static;
 use symbol_table::SymbolTable;
 
 use crate::Result;
 
-#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Finalize)]
 pub struct Symbol(symbol_table::Symbol);
+
+unsafe impl Trace for Symbol {
+    unsafe_empty_trace!();
+}
 
 impl From<NonZeroU32> for Symbol {
     fn from(n: NonZeroU32) -> Self {
@@ -87,6 +92,12 @@ impl FromStr for Symbol {
 impl From<Symbol> for &'static str {
     fn from(symbol: Symbol) -> Self {
         GLOBAL_TABLE.resolve(symbol.0)
+    }
+}
+
+impl Debug for Symbol {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        Debug::fmt(&self.0, f)
     }
 }
 

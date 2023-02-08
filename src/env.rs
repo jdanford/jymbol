@@ -1,12 +1,56 @@
-use std::fmt::{self, Display, Formatter};
+use std::{
+    fmt::{self, Display, Formatter},
+    ops::{Deref, DerefMut},
+};
 
+use gc::{Finalize, Trace};
 use im::HashMap;
 
 use crate::{Symbol, Value};
 
-#[derive(Clone, PartialEq, PartialOrd, Debug)]
+#[derive(Clone, PartialEq, PartialOrd, Debug, Finalize)]
 pub struct Env {
     map: HashMap<Symbol, Value>,
+}
+
+impl Deref for Env {
+    type Target = HashMap<Symbol, Value>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.map
+    }
+}
+
+impl DerefMut for Env {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.map
+    }
+}
+
+unsafe impl Trace for Env {
+    unsafe fn trace(&self) {
+        for value in self.values() {
+            value.trace();
+        }
+    }
+
+    unsafe fn root(&self) {
+        for value in self.values() {
+            value.root();
+        }
+    }
+
+    unsafe fn unroot(&self) {
+        for value in self.values() {
+            value.unroot();
+        }
+    }
+
+    fn finalize_glue(&self) {
+        for value in self.values() {
+            value.finalize_glue();
+        }
+    }
 }
 
 impl Env {
@@ -19,7 +63,7 @@ impl Env {
 
     #[must_use]
     pub fn get(&self, symbol: Symbol) -> Option<Value> {
-        self.map.get(&symbol).copied()
+        self.map.get(&symbol).cloned()
     }
 
     #[must_use]
@@ -37,6 +81,11 @@ impl Default for Env {
 
 impl Display for Env {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "(env)")
+        write!(f, "(# env")?;
+        for (key, value) in self.iter() {
+            write!(f, "({key} {value})",)?;
+        }
+        write!(f, ")")?;
+        Ok(())
     }
 }

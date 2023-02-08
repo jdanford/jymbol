@@ -1,9 +1,8 @@
-use jymbol::{Result, VM};
+use jymbol::read;
 
-fn main() -> Result<()> {
+fn main() -> Result<(), String> {
     let input = "`(list 'a ,b ,@c 1 2 3.0 -4)";
-    let mut vm = VM::new();
-    let value = vm.read(input)?;
+    let value = read(input)?;
     println!("{value}");
     Ok(())
 }

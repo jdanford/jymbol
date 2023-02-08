@@ -5,6 +5,7 @@ use crate::Symbol;
 pub enum Expr {
     Number(f64),
     Symbol(Symbol),
+    String(String),
     Quote(Box<Expr>),
     Quasiquote(Box<Expr>),
     Unquote(Box<Expr>),
@@ -22,14 +23,17 @@ fn is_symbol_head(c: char) -> bool {
     is_symbol(c) && !c.is_ascii_digit() && c != '-'
 }
 
-#[allow(clippy::needless_pass_by_value)]
-fn expr_number(s: String) -> Expr {
+fn expr_number(s: &str) -> Expr {
     let f = s.parse().expect("invalid number");
     Expr::Number(f)
 }
 
 fn expr_symbol(s: String) -> Expr {
     Expr::Symbol(Symbol::new(s))
+}
+
+fn expr_string(s: String) -> Expr {
+    Expr::String(s)
 }
 
 fn expr_quote(expr: Expr) -> Expr {
@@ -67,38 +71,39 @@ pub fn parser() -> impl Parser<char, Expr, Error = Simple<char>> {
             .chain(frac.or_not().flatten())
             .chain::<char, _, _>(exp.or_not().flatten())
             .collect::<String>()
-            .map(expr_number)
+            .map(|s| expr_number(&s))
             .labelled("number");
 
-        // let escape = just::<char, char, Simple<char>>('\\').ignore_then(
-        //     just('\\')
-        //         .or(just('/'))
-        //         .or(just('"'))
-        //         .or(just('b').to('\x08'))
-        //         .or(just('f').to('\x0C'))
-        //         .or(just('n').to('\n'))
-        //         .or(just('r').to('\r'))
-        //         .or(just('t').to('\t'))
-        //         .or(just('u').ignore_then(
-        //             filter(char::is_ascii_hexdigit)
-        //                 .repeated()
-        //                 .exactly(4)
-        //                 .collect::<String>()
-        //                 .validate(|digits, span, emit| {
-        //                     char::from_u32(u32::from_str_radix(&digits, 16).unwrap())
-        //                         .unwrap_or_else(|| {
-        //                             emit(Simple::custom(span, "invalid unicode character"));
-        //                             '\u{FFFD}' // unicode replacement character
-        //                         })
-        //                 }),
-        //         )),
-        // );
+        let escape = just::<char, char, Simple<char>>('\\').ignore_then(
+            just('\\')
+                .or(just('/'))
+                .or(just('"'))
+                .or(just('b').to('\x08'))
+                .or(just('f').to('\x0C'))
+                .or(just('n').to('\n'))
+                .or(just('r').to('\r'))
+                .or(just('t').to('\t'))
+                .or(just('u').ignore_then(
+                    filter(char::is_ascii_hexdigit)
+                        .repeated()
+                        .exactly(4)
+                        .collect::<String>()
+                        .validate(|digits, span, emit| {
+                            char::from_u32(u32::from_str_radix(&digits, 16).unwrap())
+                                .unwrap_or_else(|| {
+                                    emit(Simple::custom(span, "invalid unicode character"));
+                                    '\u{FFFD}' // unicode replacement character
+                                })
+                        }),
+                )),
+        );
 
-        // let string = just('"')
-        //     .ignore_then(filter(|c| *c != '\\' && *c != '"').or(escape).repeated())
-        //     .then_ignore(just('"'))
-        //     .collect::<String>()
-        //     .labelled("string");
+        let string = just('"')
+            .ignore_then(filter(|c| *c != '\\' && *c != '"').or(escape).repeated())
+            .then_ignore(just('"'))
+            .collect::<String>()
+            .map(expr_string)
+            .labelled("string");
 
         let symbol_head = filter(|c| is_symbol_head(*c));
         let symbol_tail = filter(|c| is_symbol(*c)).repeated();
@@ -138,6 +143,7 @@ pub fn parser() -> impl Parser<char, Expr, Error = Simple<char>> {
         choice((
             number,
             symbol,
+            string,
             quote,
             quasiquote,
             unquote,

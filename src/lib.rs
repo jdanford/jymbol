@@ -4,25 +4,23 @@
     allow(clippy::missing_docs_in_private_items, clippy::missing_errors_doc)
 )]
 
-mod check;
+mod compound;
 mod env;
 mod error;
 mod hash;
-mod heap;
-mod list;
+mod iterator;
 mod parser;
 mod read;
-mod reference;
 mod symbol;
 mod value;
 mod vm;
 
-pub use check::{check_count, check_type};
+pub use compound::Compound;
 pub use env::Env;
 pub use error::{Error, Result};
-pub use heap::Heap;
-pub use list::ListIterator;
-pub use reference::Ref;
+pub use hash::hash;
+pub use iterator::ValueIterator;
+pub use read::read;
 pub use symbol::Symbol;
 pub use value::Value;
 pub use vm::VM;
