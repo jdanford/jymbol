@@ -105,6 +105,7 @@ lazy_static! {
     pub static ref NUMBER: Symbol = Symbol::new("number");
     pub static ref STRING: Symbol = Symbol::new("string");
     pub static ref REF: Symbol = Symbol::new("ref");
+    pub static ref ENV: Symbol = Symbol::new("env");
     pub static ref FN: Symbol = Symbol::new("fn");
     pub static ref NATIVE_FN: Symbol = Symbol::new("native-fn");
     pub static ref QUOTE: Symbol = Symbol::new("quote");

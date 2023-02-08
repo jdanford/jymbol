@@ -1,8 +1,10 @@
+use std::fmt::{self, Display, Formatter};
+
 use im::HashMap;
 
 use crate::{Symbol, Value};
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, PartialOrd, Debug)]
 pub struct Env {
     map: HashMap<Symbol, Value>,
 }
@@ -30,5 +32,11 @@ impl Env {
 impl Default for Env {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+impl Display for Env {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "(env)")
     }
 }

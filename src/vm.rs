@@ -30,8 +30,8 @@ impl VM {
         ListIterator::new(self, value)
     }
 
+    #[allow(clippy::match_wildcard_for_single_variants)]
     pub fn eval(&mut self, env: &Env, value: Value) -> Result<Value> {
-        #[allow(clippy::match_wildcard_for_single_variants)]
         match value {
             Value::Symbol(symbol) => self.eval_symbol(env, symbol),
             Value::Ref(ref_) => self.eval_ref(env, ref_),
@@ -55,16 +55,26 @@ impl VM {
         let (type_, values) = self.heap.load(ref_)?;
 
         if type_ == *symbol::FN {
-            check_count(*symbol::FN, values, 2)?;
-            let params = values[0];
-            let body = values[1];
-            self.apply_fn(env, params, args, body)
+            check_count(*symbol::FN, values, 3)?;
+            let fn_env = values[0];
+            let params = values[1];
+            let body = values[2];
+            self.apply_fn(env, fn_env, params, args, body)
         } else {
             Err(format!("can't apply {type_}",))
         }
     }
 
-    fn apply_fn(&mut self, env: &Env, params: Value, args: Value, body: Value) -> Result<Value> {
+    fn apply_fn(
+        &mut self,
+        call_env: &Env,
+        fn_env_wrapped: Value,
+        params: Value,
+        args: Value,
+        body: Value,
+    ) -> Result<Value> {
+        let _fn_env_ref: Ref = fn_env_wrapped.try_into()?;
+        let fn_env = Env::default(); // TODO: implement
         let param_results: Vec<Result<Value>> = self.iter_list(params).collect();
         let arg_results: Vec<Result<Value>> = self.iter_list(args).collect();
 
@@ -76,12 +86,12 @@ impl VM {
             ));
         }
 
-        let mut new_env = env.clone();
+        let mut new_env = fn_env;
         for (param_result, arg_result) in param_results.into_iter().zip(arg_results) {
             let param = param_result?;
             let arg = arg_result?;
             if let Value::Symbol(param_symbol) = param {
-                let value = self.eval(env, arg)?;
+                let value = self.eval(call_env, arg)?;
                 new_env = new_env.update(param_symbol, value);
             }
         }
