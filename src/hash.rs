@@ -62,7 +62,7 @@ pub trait ValueHasher: Hasher {
 
     fn write_native_function(&mut self, fn_: &native::Function) -> Result<()> {
         self.write_type(*symbol::NATIVE_FN);
-        self.write(fn_.name.as_bytes());
+        self.write_u64(fn_.id);
 
         Ok(())
     }

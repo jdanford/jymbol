@@ -27,6 +27,43 @@ impl DerefMut for Env {
     }
 }
 
+impl Env {
+    #[must_use]
+    pub fn new() -> Self {
+        Env {
+            map: HashMap::new(),
+        }
+    }
+
+    #[must_use]
+    pub fn get(&self, sym: Symbol) -> Option<Value> {
+        self.map.get(&sym).cloned()
+    }
+
+    #[must_use]
+    pub fn set<S: Into<Symbol>>(&self, s: S, value: Value) -> Env {
+        let map = self.map.update(s.into(), value);
+        Env { map }
+    }
+}
+
+impl Default for Env {
+    fn default() -> Self {
+        Env::new()
+    }
+}
+
+impl Display for Env {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "(# env")?;
+        for (key, value) in self.iter() {
+            write!(f, " ({key} {value})",)?;
+        }
+        write!(f, ")")?;
+        Ok(())
+    }
+}
+
 unsafe impl Trace for Env {
     unsafe fn trace(&self) {
         for value in self.values() {
@@ -50,42 +87,5 @@ unsafe impl Trace for Env {
         for value in self.values() {
             value.finalize_glue();
         }
-    }
-}
-
-impl Env {
-    #[must_use]
-    pub fn new() -> Self {
-        Env {
-            map: HashMap::new(),
-        }
-    }
-
-    #[must_use]
-    pub fn get(&self, sym: Symbol) -> Option<Value> {
-        self.map.get(&sym).cloned()
-    }
-
-    #[must_use]
-    pub fn set(&self, sym: Symbol, value: Value) -> Env {
-        let map = self.map.update(sym, value);
-        Env { map }
-    }
-}
-
-impl Default for Env {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl Display for Env {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "(# env")?;
-        for (key, value) in self.iter() {
-            write!(f, " ({key} {value})",)?;
-        }
-        write!(f, ")")?;
-        Ok(())
     }
 }

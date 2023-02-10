@@ -39,6 +39,18 @@ impl From<Env> for Value {
     }
 }
 
+impl From<Function> for Value {
+    fn from(fn_: Function) -> Self {
+        Value::Function(Gc::new(fn_))
+    }
+}
+
+impl From<native::Function> for Value {
+    fn from(fn_: native::Function) -> Self {
+        Value::NativeFunction(Gc::new(fn_))
+    }
+}
+
 impl TryInto<f64> for Value {
     type Error = Error;
 
@@ -70,6 +82,15 @@ impl Value {
     pub fn function(env: Gc<Env>, params: Vec<Symbol>, body: Value) -> Result<Value> {
         let fn_ = Function::new(env, params, body);
         Ok(Value::Function(Gc::new(fn_)))
+    }
+
+    pub fn native_function(
+        f: native::RawFunction,
+        arity: Option<usize>,
+        eval_args: bool,
+    ) -> Result<Value> {
+        let fn_ = native::Function::new(f, arity, eval_args);
+        Ok(Value::NativeFunction(Gc::new(fn_)))
     }
 
     pub fn cons(head: Value, tail: Value) -> Result<Value> {

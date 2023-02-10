@@ -98,8 +98,8 @@ impl Display for Symbol {
 
 macro_rules! static_symbol {
     ($name:ident = $value:expr) => {
-        pub static $name: once_cell::sync::Lazy<$crate::Symbol> =
-            once_cell::sync::Lazy::new(|| $crate::Symbol::new($value));
+        pub static $name: ::once_cell::sync::Lazy<$crate::Symbol> =
+            ::once_cell::sync::Lazy::new(|| $crate::Symbol::new($value));
     };
 }
 
@@ -112,8 +112,8 @@ macro_rules! static_symbols {
 static_symbols! {
     NIL = "nil",
     CONS = "cons",
-    TRUE = "true",
     FALSE = "false",
+    TRUE = "true",
     NUMBER = "number",
     SYMBOL = "symbol",
     STRING = "string",

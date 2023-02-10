@@ -11,13 +11,19 @@ pub struct Function {
     pub body: Value,
 }
 
+pub trait Apply {
+    fn apply(&self, vm: &mut VM, env: &Env, args: &[Value]) -> Result<Value>;
+}
+
 impl Function {
     #[must_use]
     pub fn new(env: Gc<Env>, params: Vec<Symbol>, body: Value) -> Self {
         Function { env, params, body }
     }
+}
 
-    pub fn apply(&self, vm: &mut VM, env: &Env, args: &[Value]) -> Result<Value> {
+impl Apply for Function {
+    fn apply(&self, vm: &mut VM, env: &Env, args: &[Value]) -> Result<Value> {
         let expected_arity = self.params.len();
         let actual_arity = args.len();
         check::arity(expected_arity, actual_arity)?;
