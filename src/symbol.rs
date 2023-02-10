@@ -112,8 +112,8 @@ macro_rules! static_symbols {
 static_symbols! {
     NIL = "nil",
     CONS = "cons",
-    FALSE = "false",
     TRUE = "true",
+    FALSE = "false",
     NUMBER = "number",
     SYMBOL = "symbol",
     STRING = "string",
@@ -121,7 +121,6 @@ static_symbols! {
     QUASIQUOTE = "quasiquote",
     UNQUOTE = "unquote",
     UNQUOTE_SPLICING = "unquote-splicing",
-    ENV = "env",
     FN = "fn",
     NATIVE_FN = "native-fn",
     _AMPERSAND = "&",

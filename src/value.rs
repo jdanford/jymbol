@@ -9,7 +9,6 @@ pub enum Value {
     Number(f64),
     Symbol(Symbol),
     String(Gc<String>),
-    Env(Gc<Env>),
     Function(Gc<Function>),
     NativeFunction(Gc<native::Function>),
     Compound(Gc<Compound>),
@@ -30,12 +29,6 @@ impl From<Symbol> for Value {
 impl From<String> for Value {
     fn from(s: String) -> Self {
         Value::String(Gc::new(s))
-    }
-}
-
-impl From<Env> for Value {
-    fn from(env: Env) -> Self {
-        Value::Env(Gc::new(env))
     }
 }
 
@@ -79,20 +72,6 @@ impl Value {
         Ok(Value::Compound(Gc::new(compound)))
     }
 
-    pub fn function(env: Gc<Env>, params: Vec<Symbol>, body: Value) -> Result<Value> {
-        let fn_ = Function::new(env, params, body);
-        Ok(Value::Function(Gc::new(fn_)))
-    }
-
-    pub fn native_function<A: Into<Arity>>(
-        f: native::RawFunction,
-        arity: A,
-        eval_args: bool,
-    ) -> Result<Value> {
-        let fn_ = native::Function::new(f, arity, eval_args);
-        Ok(Value::NativeFunction(Gc::new(fn_)))
-    }
-
     pub fn cons(head: Value, tail: Value) -> Result<Value> {
         Value::compound(*symbol::CONS, vec![head, tail])
     }
@@ -107,19 +86,25 @@ impl Value {
         Ok(list)
     }
 
+    pub fn function(env: Gc<Env>, params: Vec<Symbol>, body: Value) -> Result<Value> {
+        let fn_ = Function::new(env, params, body);
+        Ok(Value::Function(Gc::new(fn_)))
+    }
+
+    pub fn native_function<A: Into<Arity>>(
+        f: native::RawFunction,
+        arity: A,
+        eval_args: bool,
+    ) -> Result<Value> {
+        let fn_ = native::Function::new(f, arity, eval_args);
+        Ok(Value::NativeFunction(Gc::new(fn_)))
+    }
+
     pub fn as_string(&self) -> Result<Gc<String>> {
         if let Value::String(s) = self {
             Ok(s.clone())
         } else {
             Err(format!("expected string, got {self}"))
-        }
-    }
-
-    pub fn as_env(&self) -> Result<Gc<Env>> {
-        if let Value::Env(env) = self {
-            Ok(env.clone())
-        } else {
-            Err(format!("expected env, got {self}"))
         }
     }
 
@@ -160,7 +145,6 @@ impl Display for Value {
             }
             Value::Symbol(sym) => Display::fmt(&sym, f),
             Value::String(s) => Display::fmt(&s, f),
-            Value::Env(env) => Display::fmt(&env, f),
             Value::Function(fn_) => Display::fmt(&fn_, f),
             Value::NativeFunction(fn_) => Display::fmt(&fn_, f),
             Value::Compound(compound) => Display::fmt(&compound, f),

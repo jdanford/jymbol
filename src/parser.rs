@@ -168,3 +168,15 @@ pub fn expr() -> impl Parser<char, Expr, Error = Simple<char>> {
 pub fn exprs() -> impl Parser<char, Vec<Expr>, Error = Simple<char>> {
     expr_raw().repeated().collect::<Vec<_>>().then_ignore(end())
 }
+
+pub fn collect_errors(errors: Vec<Simple<char>>) -> String {
+    let error_strings: Vec<String> = errors.into_iter().map(|err| err.to_string()).collect();
+    error_strings.join("\n")
+}
+
+pub fn parse<T, S: AsRef<str>>(
+    s: S,
+    parser: impl Parser<char, T, Error = Simple<char>>,
+) -> Result<T, String> {
+    parser.parse(s.as_ref()).map_err(collect_errors)
+}

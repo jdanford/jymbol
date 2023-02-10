@@ -20,8 +20,9 @@ impl VM {
             Value::Compound(cons) if cons.type_ == *symbol::CONS => {
                 cons.check_len(2)?;
                 let unevaled_fn = &cons.values[0];
-                let fn_boxed = self.eval(env, unevaled_fn)?;
                 let args = &cons.values[1];
+
+                let fn_boxed = self.eval(env, unevaled_fn)?;
                 self.apply(env, &fn_boxed, args)
             }
             _ => Ok(value.clone()),
@@ -29,7 +30,7 @@ impl VM {
     }
 
     pub fn eval_str<S: AsRef<str>>(&mut self, env: &Env, s: S) -> Result<Value> {
-        let value = read::expr(s)?;
+        let value = read::value(s)?;
         self.eval(env, &value)
     }
 

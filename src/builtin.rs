@@ -19,8 +19,8 @@ pub fn fn_(context: &mut native::Context) -> Result<Value> {
 pub fn env(vm: &mut VM) -> Result<Env> {
     let mut env = Env::new();
     env = env.set(*symbol::NIL, (*symbol::NIL).into());
-    env = env.set(*symbol::FALSE, (*symbol::FALSE).into());
     env = env.set(*symbol::TRUE, (*symbol::TRUE).into());
+    env = env.set(*symbol::FALSE, (*symbol::FALSE).into());
 
     env = env.set("fn", Value::native_function(fn_, 2, false)?);
     env = env.set("cons", Value::native_function(cons, 2, false)?);

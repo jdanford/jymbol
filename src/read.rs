@@ -1,23 +1,15 @@
-use chumsky::{error::Simple, Parser};
-
 use crate::{
     parser::{self, Expr},
     symbol, Result, ResultIterator, Value,
 };
 
-pub fn expr<S: AsRef<str>>(input: S) -> Result<Value> {
-    let parser = parser::expr();
-    let expr = parser
-        .parse(input.as_ref())
-        .map_err(collect_parser_errors)?;
+pub fn value<S: AsRef<str>>(s: S) -> Result<Value> {
+    let expr = parser::parse(s, parser::expr())?;
     reify(expr)
 }
 
-pub fn exprs<S: AsRef<str>>(input: S) -> Result<Vec<Value>> {
-    let parser = parser::exprs();
-    let exprs = parser
-        .parse(input.as_ref())
-        .map_err(collect_parser_errors)?;
+pub fn values<S: AsRef<str>>(s: S) -> Result<Vec<Value>> {
+    let exprs = parser::parse(s, parser::exprs())?;
     exprs.into_iter().map(reify).try_collect()
 }
 
@@ -47,9 +39,4 @@ fn reify(expr: Expr) -> Result<Value> {
             Value::list(&values)
         }
     }
-}
-
-fn collect_parser_errors(errors: Vec<Simple<char>>) -> String {
-    let error_strings: Vec<String> = errors.into_iter().map(|err| err.to_string()).collect();
-    error_strings.join("\n")
 }
