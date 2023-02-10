@@ -140,6 +140,13 @@ pub fn parser() -> impl Parser<char, Expr, Error = Simple<char>> {
             .map(expr_list)
             .labelled("list");
 
+        let square_list = expr
+            .clone()
+            .repeated()
+            .delimited_by(just('['), just(']'))
+            .map(expr_list)
+            .labelled("list");
+
         choice((
             number,
             symbol,
@@ -149,6 +156,7 @@ pub fn parser() -> impl Parser<char, Expr, Error = Simple<char>> {
             unquote,
             unquote_splicing,
             list,
+            square_list,
         ))
         .padded()
     })

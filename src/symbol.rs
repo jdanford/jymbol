@@ -124,4 +124,5 @@ static_symbols! {
     ENV = "env",
     FN = "fn",
     NATIVE_FN = "native-fn",
+    _AMPERSAND = "&",
 }

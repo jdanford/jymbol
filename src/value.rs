@@ -2,7 +2,7 @@ use std::fmt::{self, Debug, Display, Formatter};
 
 use gc::{Finalize, Gc, Trace};
 
-use crate::{native, symbol, Compound, Env, Error, Function, Result, Symbol};
+use crate::{native, symbol, Arity, Compound, Env, Error, Function, Result, Symbol};
 
 #[derive(Clone, PartialEq, PartialOrd, Debug, Trace, Finalize)]
 pub enum Value {
@@ -84,9 +84,9 @@ impl Value {
         Ok(Value::Function(Gc::new(fn_)))
     }
 
-    pub fn native_function(
+    pub fn native_function<A: Into<Arity>>(
         f: native::RawFunction,
-        arity: Option<usize>,
+        arity: A,
         eval_args: bool,
     ) -> Result<Value> {
         let fn_ = native::Function::new(f, arity, eval_args);

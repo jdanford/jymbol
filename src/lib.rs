@@ -4,8 +4,8 @@
     allow(clippy::missing_docs_in_private_items, clippy::missing_errors_doc)
 )]
 
+mod arity;
 pub mod builtin;
-mod check;
 mod compound;
 mod env;
 mod error;
@@ -19,6 +19,7 @@ pub mod symbol;
 mod value;
 mod vm;
 
+pub use arity::Arity;
 pub use compound::Compound;
 pub use env::Env;
 pub use error::{Error, Result};

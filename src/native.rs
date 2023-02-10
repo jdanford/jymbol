@@ -7,7 +7,7 @@ use std::{
 use gc::{unsafe_empty_trace, Finalize, Trace};
 use once_cell::sync::Lazy;
 
-use crate::{check, function::Apply, Env, Result, ResultIterator, Value, VM};
+use crate::{function::Apply, Arity, Env, Result, ResultIterator, Value, VM};
 
 pub struct Context<'a> {
     pub vm: &'a mut VM,
@@ -20,9 +20,9 @@ pub type RawFunction = fn(&mut Context<'_>) -> Result<Value>;
 #[derive(Clone, Finalize)]
 pub struct Function {
     pub id: u64,
-    pub arity: Option<usize>,
-    pub eval_args: bool,
     pub f: Box<RawFunction>,
+    pub arity: Arity,
+    pub eval_args: bool,
 }
 
 static NEXT_ID: Lazy<Mutex<u64>> = Lazy::new(|| Mutex::new(0));
@@ -35,11 +35,11 @@ fn next_id() -> u64 {
 }
 
 impl Function {
-    pub fn new(f: RawFunction, arity: Option<usize>, eval_args: bool) -> Function {
+    pub fn new<A: Into<Arity>>(f: RawFunction, arity: A, eval_args: bool) -> Function {
         Function {
             id: next_id(),
             f: f.into(),
-            arity,
+            arity: arity.into(),
             eval_args,
         }
     }
@@ -75,10 +75,7 @@ unsafe impl Trace for Function {
 
 impl Apply for Function {
     fn apply(&self, vm: &mut VM, env: &Env, args: &[Value]) -> Result<Value> {
-        if let Some(expected_arity) = self.arity {
-            let actual_arity = args.len();
-            check::arity(expected_arity, actual_arity)?;
-        }
+        self.arity.check(args.len())?;
 
         if self.eval_args {
             let args = &args.iter().map(|arg| vm.eval(env, arg)).try_collect()?;
