@@ -1,4 +1,4 @@
-use crate::{function::Apply, symbol, Env, Result, ResultIterator, Value};
+use crate::{function::Apply, read, symbol, Env, Result, ResultIterator, Value};
 
 pub struct VM {
     // ???
@@ -26,6 +26,11 @@ impl VM {
             }
             _ => Ok(value.clone()),
         }
+    }
+
+    pub fn eval_str<S: AsRef<str>>(&mut self, env: &Env, s: S) -> Result<Value> {
+        let value = read::expr(s)?;
+        self.eval(env, &value)
     }
 
     fn apply(&mut self, env: &Env, fn_boxed: &Value, args_boxed: &Value) -> Result<Value> {

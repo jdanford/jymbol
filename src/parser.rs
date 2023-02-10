@@ -56,7 +56,7 @@ fn expr_list(exprs: Vec<Expr>) -> Expr {
     Expr::List(exprs)
 }
 
-pub fn parser() -> impl Parser<char, Expr, Error = Simple<char>> {
+fn expr_raw() -> impl Parser<char, Expr, Error = Simple<char>> {
     recursive(|expr| {
         let frac = just('.').chain(text::digits(10));
 
@@ -74,9 +74,8 @@ pub fn parser() -> impl Parser<char, Expr, Error = Simple<char>> {
             .map(|s| expr_number(&s))
             .labelled("number");
 
-        let escape = just::<char, char, Simple<char>>('\\').ignore_then(
+        let escape = just('\\').ignore_then(
             just('\\')
-                .or(just('/'))
                 .or(just('"'))
                 .or(just('b').to('\x08'))
                 .or(just('f').to('\x0C'))
@@ -160,5 +159,12 @@ pub fn parser() -> impl Parser<char, Expr, Error = Simple<char>> {
         ))
         .padded()
     })
-    .then_ignore(end())
+}
+
+pub fn expr() -> impl Parser<char, Expr, Error = Simple<char>> {
+    expr_raw().then_ignore(end())
+}
+
+pub fn exprs() -> impl Parser<char, Vec<Expr>, Error = Simple<char>> {
+    expr_raw().repeated().collect::<Vec<_>>().then_ignore(end())
 }
