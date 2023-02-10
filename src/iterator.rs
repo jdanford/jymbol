@@ -1,3 +1,5 @@
+use std::result;
+
 use crate::{symbol, Result, Value};
 
 #[allow(clippy::module_name_repetitions)]
@@ -20,7 +22,7 @@ impl ValueIterator {
                 Ok(Some(head))
             }
             Value::Symbol(sym) if *sym == *symbol::NIL => Ok(None),
-            _ => Err(format!("expected cons or nil, got {:?}", self.value)),
+            _ => Err(format!("expected cons or nil, got {}", self.value)),
         }
     }
 }
@@ -41,3 +43,18 @@ impl IntoIterator for Value {
         ValueIterator::new(self)
     }
 }
+
+// TODO: use generic implementation once stabilized
+#[allow(clippy::module_name_repetitions)]
+pub trait ResultIterator<T, E>: Iterator<Item = result::Result<T, E>> + Sized {
+    fn try_collect(self) -> result::Result<Vec<T>, E> {
+        let mut values = Vec::<T>::new();
+        for result in self {
+            values.push(result?);
+        }
+
+        Ok(values)
+    }
+}
+
+impl<T, E, I: Iterator<Item = result::Result<T, E>>> ResultIterator<T, E> for I {}

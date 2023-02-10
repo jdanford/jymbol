@@ -3,12 +3,10 @@
 use std::{
     fmt::{self, Debug, Display, Formatter},
     num::NonZeroU32,
-    result,
-    str::FromStr,
 };
 
 use gc::{unsafe_empty_trace, Finalize, Trace};
-use lazy_static::lazy_static;
+use once_cell::sync::Lazy;
 use symbol_table::SymbolTable;
 
 use crate::Result;
@@ -27,14 +25,14 @@ impl From<NonZeroU32> for Symbol {
 }
 
 impl From<Symbol> for NonZeroU32 {
-    fn from(symbol: Symbol) -> Self {
-        symbol.0.into()
+    fn from(sym: Symbol) -> Self {
+        sym.0.into()
     }
 }
 
 impl From<Symbol> for u32 {
-    fn from(symbol: Symbol) -> Self {
-        NonZeroU32::from(symbol).into()
+    fn from(sym: Symbol) -> Self {
+        NonZeroU32::from(sym).into()
     }
 }
 
@@ -60,9 +58,7 @@ impl Symbol {
     }
 }
 
-lazy_static! {
-    static ref GLOBAL_TABLE: SymbolTable = SymbolTable::new();
-}
+static GLOBAL_TABLE: Lazy<SymbolTable> = Lazy::new(SymbolTable::new);
 
 impl From<&str> for Symbol {
     fn from(s: &str) -> Self {
@@ -82,17 +78,9 @@ impl From<&String> for Symbol {
     }
 }
 
-impl FromStr for Symbol {
-    type Err = std::convert::Infallible;
-
-    fn from_str(s: &str) -> result::Result<Self, Self::Err> {
-        Ok(s.into())
-    }
-}
-
 impl From<Symbol> for &'static str {
-    fn from(symbol: Symbol) -> Self {
-        GLOBAL_TABLE.resolve(symbol.0)
+    fn from(sym: Symbol) -> Self {
+        GLOBAL_TABLE.resolve(sym.0)
     }
 }
 
@@ -108,20 +96,32 @@ impl Display for Symbol {
     }
 }
 
-lazy_static! {
-    pub static ref NIL: Symbol = Symbol::new("nil");
-    pub static ref CONS: Symbol = Symbol::new("cons");
-    pub static ref TRUE: Symbol = Symbol::new("true");
-    pub static ref FALSE: Symbol = Symbol::new("false");
-    pub static ref SYMBOL: Symbol = Symbol::new("symbol");
-    pub static ref NUMBER: Symbol = Symbol::new("number");
-    pub static ref STRING: Symbol = Symbol::new("string");
-    pub static ref REF: Symbol = Symbol::new("ref");
-    pub static ref ENV: Symbol = Symbol::new("env");
-    pub static ref FUNCTION: Symbol = Symbol::new("function");
-    pub static ref NATIVE_FUNCTION: Symbol = Symbol::new("native-function");
-    pub static ref QUOTE: Symbol = Symbol::new("quote");
-    pub static ref QUASIQUOTE: Symbol = Symbol::new("quasiquote");
-    pub static ref UNQUOTE: Symbol = Symbol::new("unquote");
-    pub static ref UNQUOTE_SPLICING: Symbol = Symbol::new("unquote-splicing");
+macro_rules! static_symbol {
+    ($name:ident = $value:expr) => {
+        pub static $name: once_cell::sync::Lazy<$crate::Symbol> =
+            once_cell::sync::Lazy::new(|| $crate::Symbol::new($value));
+    };
+}
+
+macro_rules! static_symbols {
+    ($($name:ident = $value:expr),* $(,)?) => {
+        $(static_symbol!($name = $value);)*
+    };
+}
+
+static_symbols! {
+    NIL = "nil",
+    CONS = "cons",
+    TRUE = "true",
+    FALSE = "false",
+    NUMBER = "number",
+    SYMBOL = "symbol",
+    STRING = "string",
+    QUOTE = "quote",
+    QUASIQUOTE = "quasiquote",
+    UNQUOTE = "unquote",
+    UNQUOTE_SPLICING = "unquote-splicing",
+    ENV = "env",
+    FN = "fn",
+    NATIVE_FN = "native-fn",
 }

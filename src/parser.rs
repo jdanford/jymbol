@@ -24,8 +24,8 @@ fn is_symbol_head(c: char) -> bool {
 }
 
 fn expr_number(s: &str) -> Expr {
-    let f = s.parse().expect("invalid number");
-    Expr::Number(f)
+    let num = s.parse().expect("invalid number");
+    Expr::Number(num)
 }
 
 fn expr_symbol(s: String) -> Expr {

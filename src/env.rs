@@ -62,13 +62,13 @@ impl Env {
     }
 
     #[must_use]
-    pub fn get(&self, symbol: Symbol) -> Option<Value> {
-        self.map.get(&symbol).cloned()
+    pub fn get(&self, sym: Symbol) -> Option<Value> {
+        self.map.get(&sym).cloned()
     }
 
     #[must_use]
-    pub fn update(&self, symbol: Symbol, value: Value) -> Env {
-        let map = self.map.update(symbol, value);
+    pub fn set(&self, sym: Symbol, value: Value) -> Env {
+        let map = self.map.update(sym, value);
         Env { map }
     }
 }

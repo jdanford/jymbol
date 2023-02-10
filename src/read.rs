@@ -14,23 +14,23 @@ fn parse<S: AsRef<str>>(input: S) -> Result<Expr> {
 
 fn reify(expr: Expr) -> Result<Value> {
     match expr {
-        Expr::Number(n) => Ok(Value::Number(n)),
-        Expr::Symbol(symbol) => Ok(symbol.into()),
-        Expr::String(string) => Ok(string.into()),
-        Expr::Quote(inner) => {
-            let value = reify(*inner)?;
+        Expr::Number(num) => Ok(Value::Number(num)),
+        Expr::Symbol(sym) => Ok(sym.into()),
+        Expr::String(s) => Ok(s.into()),
+        Expr::Quote(expr) => {
+            let value = reify(*expr)?;
             Value::compound(*symbol::QUOTE, vec![value])
         }
-        Expr::Quasiquote(inner) => {
-            let value = reify(*inner)?;
+        Expr::Quasiquote(expr) => {
+            let value = reify(*expr)?;
             Value::compound(*symbol::QUASIQUOTE, vec![value])
         }
-        Expr::Unquote(inner) => {
-            let value = reify(*inner)?;
+        Expr::Unquote(expr) => {
+            let value = reify(*expr)?;
             Value::compound(*symbol::UNQUOTE, vec![value])
         }
-        Expr::UnquoteSplicing(inner) => {
-            let value = reify(*inner)?;
+        Expr::UnquoteSplicing(expr) => {
+            let value = reify(*expr)?;
             Value::compound(*symbol::UNQUOTE_SPLICING, vec![value])
         }
         Expr::List(exprs) => {
@@ -38,7 +38,7 @@ fn reify(expr: Expr) -> Result<Value> {
                 .into_iter()
                 .map(reify)
                 .collect::<Result<Vec<Value>>>()?;
-            Value::list(values)
+            Value::list(&values)
         }
     }
 }

@@ -1,4 +1,4 @@
-use crate::{function::Function, symbol, Env, Result, Value};
+use crate::{symbol, Env, Result, ResultIterator, Value};
 
 pub struct VM {
     // ???
@@ -14,46 +14,29 @@ impl VM {
 
     pub fn eval(&mut self, env: &Env, value: &Value) -> Result<Value> {
         match value {
-            Value::Symbol(symbol) => env
-                .get(*symbol)
-                .ok_or_else(|| format!("undefined symbol: {symbol:?}")),
+            Value::Symbol(sym) => env
+                .get(*sym)
+                .ok_or_else(|| format!("undefined symbol: {sym}")),
             Value::Compound(cons) if cons.type_ == *symbol::CONS => {
                 cons.check_len(2)?;
-                let func_boxed = &cons.values[0];
+                let fn_boxed = &cons.values[0];
                 let args = &cons.values[1];
-                self.apply(env, func_boxed, args)
+                self.apply(env, fn_boxed, args)
             }
             _ => Ok(value.clone()),
         }
     }
 
-    fn apply(&mut self, env: &Env, func_boxed: &Value, args: &Value) -> Result<Value> {
-        if let Value::Function(func) = func_boxed {
-            self.apply_function(env, func, args)
+    fn apply(&mut self, env: &Env, fn_boxed: &Value, args_boxed: &Value) -> Result<Value> {
+        let args = args_boxed.clone().into_iter().try_collect()?;
+
+        if let Value::Function(fn_) = fn_boxed {
+            fn_.apply(self, env, &args)
+        } else if let Value::NativeFunction(fn_) = fn_boxed {
+            fn_.apply(self, env, &args)
         } else {
-            Err(format!("can't apply {func_boxed:?}"))
+            Err(format!("can't apply {fn_boxed}"))
         }
-    }
-
-    fn apply_function(&mut self, env: &Env, func: &Function, args: &Value) -> Result<Value> {
-        let arg_results: Vec<Result<Value>> = args.clone().into_iter().collect();
-
-        let expected_arity = func.params.len();
-        let actual_arity = arg_results.len();
-        if expected_arity != actual_arity {
-            return Err(format!(
-                "expected {expected_arity} arguments, got {actual_arity}",
-            ));
-        }
-
-        let mut new_env: Env = (*func.env).clone();
-        for (param, arg_result) in func.params.iter().zip(arg_results) {
-            let arg = arg_result?;
-            let value = self.eval(env, &arg)?;
-            new_env = new_env.update(*param, value);
-        }
-
-        self.eval(&new_env, &func.body)
     }
 }
 
