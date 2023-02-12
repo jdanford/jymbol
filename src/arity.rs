@@ -32,6 +32,8 @@ impl Arity {
             Arity::Exactly(expected) => {
                 if actual == expected {
                     Ok(())
+                } else if expected == 1 {
+                    Err(format!("expected {expected} argument, got {actual}"))
                 } else {
                     Err(format!("expected {expected} arguments, got {actual}"))
                 }

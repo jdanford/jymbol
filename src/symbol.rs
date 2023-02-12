@@ -114,8 +114,11 @@ static_symbols! {
     CONS = "cons",
     TRUE = "true",
     FALSE = "false",
-    NUMBER = "number",
+    BOOLEAN = "boolean",
+    BLANK = "blank",
     SYMBOL = "symbol",
+    REST_SYMBOL = "rest-symbol",
+    NUMBER = "number",
     STRING = "string",
     QUOTE = "quote",
     QUASIQUOTE = "quasiquote",
@@ -123,5 +126,4 @@ static_symbols! {
     UNQUOTE_SPLICING = "unquote-splicing",
     FN = "fn",
     NATIVE_FN = "native-fn",
-    _AMPERSAND = "&",
 }

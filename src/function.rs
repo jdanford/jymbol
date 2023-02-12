@@ -2,22 +2,17 @@ use std::fmt::{self, Display, Formatter};
 
 use gc::{Finalize, Gc, Trace};
 
-use crate::{Env, Result, ResultIterator, Symbol, Value, VM};
+use crate::{apply::Apply, unify, Env, Result, ResultIterator, Value, VM};
 
 #[derive(Clone, PartialEq, PartialOrd, Debug, Trace, Finalize)]
 pub struct Function {
     pub env: Gc<Env>,
-    pub params: Vec<Symbol>,
+    pub params: Vec<Value>,
     pub body: Value,
 }
 
-pub trait Apply {
-    fn apply(&self, vm: &mut VM, env: &Env, args: &[Value]) -> Result<Value>;
-}
-
 impl Function {
-    #[must_use]
-    pub fn new(env: Gc<Env>, params: Vec<Symbol>, body: Value) -> Self {
+    pub fn new(env: Gc<Env>, params: Vec<Value>, body: Value) -> Self {
         Function { env, params, body }
     }
 }
@@ -25,7 +20,7 @@ impl Function {
 impl Apply for Function {
     fn apply(&self, vm: &mut VM, env: &Env, args: &[Value]) -> Result<Value> {
         let evaled_args = args.iter().map(|arg| vm.eval(env, arg)).try_collect()?;
-        let new_env = env.bind(&self.params, &evaled_args)?;
+        let new_env = unify::slice(&self.params, &evaled_args)?;
         vm.eval(&new_env, &self.body)
     }
 }

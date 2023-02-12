@@ -1,19 +1,16 @@
-use crate::{native, symbol, Env, Result, ResultIterator, Value, VM};
+use crate::{native, symbol, Env, Function, Result, ResultIterator, Value, VM};
 
 pub fn cons(context: &mut native::Context) -> Result<Value> {
     let head = context.args[0].clone();
     let tail = context.args[1].clone();
-    Value::cons(head, tail)
+    Ok(Value::cons(head, tail))
 }
 
 pub fn fn_(context: &mut native::Context) -> Result<Value> {
-    let params_boxed = context.args[0].clone();
+    let params_list = context.args[0].clone();
     let body = context.args[1].clone();
-    let params = params_boxed
-        .into_iter()
-        .map(|value| value?.try_into())
-        .try_collect()?;
-    Value::function(context.env.clone().into(), params, body)
+    let params = params_list.into_iter().try_collect()?;
+    Ok(Function::new(context.env.clone().into(), params, body).into())
 }
 
 pub fn env(vm: &mut VM) -> Result<Env> {
@@ -22,9 +19,9 @@ pub fn env(vm: &mut VM) -> Result<Env> {
     env = env.set(*symbol::TRUE, (*symbol::TRUE).into());
     env = env.set(*symbol::FALSE, (*symbol::FALSE).into());
 
-    env = env.set("fn", Value::native_function(fn_, 2, false)?);
-    env = env.set("cons", Value::native_function(cons, 2, false)?);
-    env = env.set("list", vm.eval_str(&env, "(fn [& values] values)")?);
+    env = env.set("fn", Value::native_function(fn_, 2, false));
+    env = env.set("cons", Value::native_function(cons, 2, false));
+    env = env.set("list", vm.eval_str(&env, "(fn [...values] values)")?);
 
     Ok(env)
 }

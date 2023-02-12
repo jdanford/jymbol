@@ -2,7 +2,7 @@ use std::fmt::{self, Display, Formatter};
 
 use gc::{Finalize, Trace};
 
-use crate::{Result, Symbol, Value};
+use crate::{symbol, Arity, Result, Symbol, Value};
 
 #[derive(Clone, PartialEq, PartialOrd, Debug, Trace, Finalize)]
 pub struct Compound {
@@ -26,12 +26,28 @@ impl Compound {
         self.len() == 0
     }
 
-    pub fn check_len(&self, expected_len: usize) -> Result<()> {
-        let actual_len = self.len();
-        if actual_len == expected_len {
-            Ok(())
+    #[must_use]
+    pub fn is_cons(&self) -> bool {
+        self.type_ == *symbol::CONS
+    }
+
+    pub fn as_checked<const N: usize>(&self, expected_type: Symbol) -> Result<[Value; N]> {
+        if self.type_ == expected_type {
+            Arity::from(N).check(self.len())?;
+            Ok(self.values.clone().try_into().unwrap())
         } else {
-            Err(format!("expected {expected_len} values, got {actual_len}"))
+            let actual_type = self.type_;
+            let actual_len = self.values.len();
+            Err(format!(
+                "expected {expected_type}({N}), got {actual_type}({actual_len})"
+            ))
+        }
+    }
+
+    pub fn as_cons(&self) -> Result<(Value, Value)> {
+        let values = self.as_checked::<2>(*symbol::CONS)?;
+        match values {
+            [head, tail] => Ok((head, tail)),
         }
     }
 }

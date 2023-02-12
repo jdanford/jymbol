@@ -6,11 +6,11 @@ use std::{
 use gc::{Finalize, Trace};
 use im::HashMap;
 
-use crate::{symbol, Arity, Result, Symbol, Value};
+use crate::{Result, Symbol, Value};
 
 #[derive(Clone, PartialEq, PartialOrd, Debug, Finalize)]
 pub struct Env {
-    map: HashMap<Symbol, Value>,
+    pub map: HashMap<Symbol, Value>,
 }
 
 impl Deref for Env {
@@ -41,6 +41,25 @@ impl Env {
     }
 
     #[must_use]
+    pub fn merge(self, other: Env) -> Env {
+        let map = self.map.union(other.map);
+        Env { map }
+    }
+
+    pub fn merge_unique(self, other: Env) -> Result<Env> {
+        let intersection = self.map.clone().intersection(other.map.clone());
+        if !intersection.is_empty() {
+            let existing_vars = intersection.keys().collect::<Vec<_>>();
+            let existing_var = existing_vars[0];
+            return Err(format!("`{existing_var}` is already defined"));
+        }
+
+        let map = self.map.union(other.map);
+        let env = Env { map };
+        Ok(env)
+    }
+
+    #[must_use]
     pub fn set<S: Into<Symbol>>(&self, s: S, value: Value) -> Env {
         let map = self.map.update(s.into(), value);
         Env { map }
@@ -54,29 +73,6 @@ impl Env {
         }
 
         env
-    }
-
-    pub fn bind(&self, params: &[Symbol], values: &[Value]) -> Result<Env> {
-        let mut env = self.clone();
-
-        match params {
-            [named_params @ .., sep, rest_param] if *sep == *symbol::_AMPERSAND => {
-                let named_count = named_params.len();
-                let arity = Arity::AtLeast(named_count);
-                arity.check(values.len())?;
-
-                let (named_values, rest_values) = values.split_at(named_count);
-                let rest_list = Value::list(rest_values)?;
-                env = env.set_all(named_params, named_values);
-                env = env.set(*rest_param, rest_list);
-                Ok(env)
-            }
-            _ => {
-                let arity = Arity::Exactly(params.len());
-                arity.check(values.len())?;
-                Ok(env.set_all(params, values))
-            }
-        }
     }
 }
 

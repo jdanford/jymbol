@@ -7,7 +7,7 @@ use std::{
 use gc::{unsafe_empty_trace, Finalize, Trace};
 use once_cell::sync::Lazy;
 
-use crate::{function::Apply, Arity, Env, Result, ResultIterator, Value, VM};
+use crate::{apply::Apply, Arity, Env, Result, ResultIterator, Value, VM};
 
 pub struct Context<'a> {
     pub vm: &'a mut VM,
