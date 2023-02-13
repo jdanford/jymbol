@@ -1,6 +1,6 @@
 use gc::Gc;
 
-use crate::{native, Arity, Error, Function, Result, Symbol, Value};
+use crate::{native, Error, Function, Result, Symbol, Value};
 
 use super::compound::Compound;
 
@@ -27,15 +27,6 @@ impl TryInto<f64> for Value {
 }
 
 impl Value {
-    pub fn native_function<A: Into<Arity>>(
-        f: native::RawFunction,
-        arity: A,
-        eval_args: bool,
-    ) -> Value {
-        let fn_ = native::Function::new(f, arity, eval_args);
-        Value::NativeFunction(Gc::new(fn_))
-    }
-
     pub fn as_string(&self) -> Result<Gc<String>> {
         if let Value::String(s) = self {
             Ok(s.clone())

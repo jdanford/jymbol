@@ -1,16 +1,15 @@
 use crate::{native, symbol, Env, Function, Result, ResultIterator, Value, VM};
 
 pub fn cons(context: &mut native::Context) -> Result<Value> {
-    let head = context.args[0].clone();
-    let tail = context.args[1].clone();
+    let [head, tail] = context.as_checked::<2>()?;
     Ok(Value::cons(head, tail))
 }
 
 pub fn fn_(context: &mut native::Context) -> Result<Value> {
-    let params_list = context.args[0].clone();
-    let body = context.args[1].clone();
+    let env = context.env.clone().into();
+    let [params_list, body] = context.as_checked::<2>()?;
     let params = params_list.into_iter().try_collect()?;
-    Ok(Function::new(context.env.clone().into(), params, body).into())
+    Ok(Function::new(env, params, body).into())
 }
 
 pub fn env(vm: &mut VM) -> Result<Env> {

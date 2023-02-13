@@ -1,10 +1,10 @@
 mod compound;
 mod from;
+mod hash;
 mod into;
 mod iterator;
 
-#[allow(clippy::module_name_repetitions)]
-pub use iterator::ValueIterator;
+pub use iterator::Iter;
 
 use std::fmt::{self, Debug, Display, Formatter};
 
@@ -40,7 +40,7 @@ impl Display for Value {
                     write!(f, "{num}")
                 }
             }
-            Value::String(s) => Display::fmt(&s, f),
+            Value::String(s) => Debug::fmt(&s, f),
             Value::Function(fn_) => Display::fmt(&fn_, f),
             Value::NativeFunction(fn_) => Display::fmt(&fn_, f),
             Value::Compound(compound) => Display::fmt(&compound, f),

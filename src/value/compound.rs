@@ -37,10 +37,7 @@ impl Compound {
             Ok(self.values.clone().try_into().unwrap())
         } else {
             let actual_type = self.type_;
-            let actual_len = self.values.len();
-            Err(format!(
-                "expected {expected_type}({N}), got {actual_type}({actual_len})"
-            ))
+            Err(format!("expected {expected_type}, got {actual_type}"))
         }
     }
 

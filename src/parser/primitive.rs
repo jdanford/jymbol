@@ -1,7 +1,9 @@
 use chumsky::prelude::*;
 
 fn parse_float<S: AsRef<str>>(s: S) -> f64 {
-    s.as_ref().parse().expect("invalid number")
+    let str = s.as_ref();
+    str.parse()
+        .unwrap_or_else(|_| panic!("invalid number: {str}"))
 }
 
 pub fn float() -> impl Parser<char, f64, Error = Simple<char>> {
@@ -38,7 +40,10 @@ pub fn string() -> impl Parser<char, String, Error = Simple<char>> {
                     .validate(|digits, span, emit| {
                         char::from_u32(u32::from_str_radix(&digits, 16).unwrap()).unwrap_or_else(
                             || {
-                                emit(Simple::custom(span, "invalid unicode character"));
+                                emit(Simple::custom(
+                                    span,
+                                    format!("invalid Unicode character: \\u{digits}"),
+                                ));
                                 '\u{FFFD}' // unicode replacement character
                             },
                         )

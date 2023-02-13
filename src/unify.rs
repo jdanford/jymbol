@@ -1,4 +1,4 @@
-use crate::{symbol, Env, Result, ResultIterator, Value};
+use crate::{Env, Result, ResultIterator, Value};
 
 pub fn single(pattern: &Value, value: &Value) -> Result<Env> {
     match (pattern, value) {
@@ -19,7 +19,7 @@ pub fn single(pattern: &Value, value: &Value) -> Result<Env> {
 
 pub fn list(patterns: &[Value], values_list: &Value) -> Result<Env> {
     match (patterns, values_list) {
-        ([], sym) if *sym == Value::from(*symbol::NIL) => Ok(Env::new()),
+        ([], sym) if *sym == Value::nil() => Ok(Env::new()),
         ([Value::RestSymbol(None)], _) => Ok(Env::new()),
         ([Value::RestSymbol(Some(sym))], _) => Ok(Env::new().set(*sym, values_list.clone())),
         ([pattern, patterns @ ..], Value::Compound(cons)) => {

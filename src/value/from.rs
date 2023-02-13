@@ -1,6 +1,6 @@
 use gc::Gc;
 
-use crate::{native, symbol, Function, Symbol, Value};
+use crate::{native, symbol, Arity, Function, Symbol, Value};
 
 use super::compound::Compound;
 
@@ -36,7 +36,7 @@ impl From<native::Function> for Value {
 
 impl Value {
     pub fn symbol<S: AsRef<str>>(s: S) -> Value {
-        Value::Symbol(Symbol::new(s))
+        Symbol::new(s).into()
     }
 
     #[must_use]
@@ -45,12 +45,25 @@ impl Value {
         Value::Compound(Gc::new(compound))
     }
 
+    pub fn native_function<A: Into<Arity>>(
+        f: native::RawFunction,
+        arity: A,
+        eval_args: bool,
+    ) -> Value {
+        native::Function::new(f, arity, eval_args).into()
+    }
+
+    #[must_use]
+    pub fn nil() -> Value {
+        (*symbol::NIL).into()
+    }
+
     pub fn cons(head: Value, tail: Value) -> Value {
         Value::compound(*symbol::CONS, vec![head, tail])
     }
 
     pub fn list<T: AsRef<[Value]>>(values: T) -> Value {
-        let mut list = Value::from(*symbol::NIL);
+        let mut list = Value::nil();
 
         for value in values.as_ref().iter().rev() {
             list = Value::cons(value.clone(), list);

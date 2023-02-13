@@ -54,9 +54,7 @@ impl Env {
             return Err(format!("`{existing_var}` is already defined"));
         }
 
-        let map = self.map.union(other.map);
-        let env = Env { map };
-        Ok(env)
+        Ok(self.merge(other))
     }
 
     #[must_use]

@@ -14,6 +14,7 @@ impl VM {
 
     pub fn eval(&mut self, env: &Env, value: &Value) -> Result<Value> {
         match value {
+            Value::Blank | Value::RestSymbol(_) => Err(format!("can't evaluate {value}")),
             Value::Symbol(sym) => env
                 .get(*sym)
                 .ok_or_else(|| format!("`{sym}` is not defined")),

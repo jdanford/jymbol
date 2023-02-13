@@ -1,13 +1,12 @@
 use crate::{symbol, Result, Value};
 
-#[allow(clippy::module_name_repetitions)]
-pub struct ValueIterator {
+pub struct Iter {
     value: Value,
 }
 
-impl ValueIterator {
-    pub fn new(value: Value) -> ValueIterator {
-        ValueIterator { value }
+impl Iter {
+    pub fn new(value: Value) -> Iter {
+        Iter { value }
     }
 
     fn try_next(&mut self) -> Result<Option<Value>> {
@@ -23,7 +22,7 @@ impl ValueIterator {
     }
 }
 
-impl Iterator for ValueIterator {
+impl Iterator for Iter {
     type Item = Result<Value>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -33,9 +32,9 @@ impl Iterator for ValueIterator {
 
 impl IntoIterator for Value {
     type Item = Result<Value>;
-    type IntoIter = ValueIterator;
+    type IntoIter = Iter;
 
     fn into_iter(self) -> Self::IntoIter {
-        ValueIterator::new(self)
+        Iter::new(self)
     }
 }

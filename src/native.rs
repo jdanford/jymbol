@@ -15,6 +15,15 @@ pub struct Context<'a> {
     pub args: &'a [Value],
 }
 
+impl Context<'_> {
+    #[allow(clippy::missing_panics_doc)]
+    pub fn as_checked<const N: usize>(&self) -> Result<[Value; N]> {
+        Arity::from(N).check(self.args.len())?;
+        let vec = self.args.to_owned();
+        Ok(vec.try_into().unwrap())
+    }
+}
+
 pub type RawFunction = fn(&mut Context<'_>) -> Result<Value>;
 
 #[derive(Clone, Finalize)]
