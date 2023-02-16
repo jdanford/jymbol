@@ -1,8 +1,6 @@
 use gc::Gc;
 
-use crate::{native, symbol, Arity, Function, Symbol, Value};
-
-use super::compound::Compound;
+use crate::{native, symbol, value::Compound, Arity, Function, Symbol, Value};
 
 impl From<Symbol> for Value {
     fn from(sym: Symbol) -> Self {
@@ -37,6 +35,10 @@ impl From<native::Function> for Value {
 impl Value {
     pub fn symbol<S: AsRef<str>>(s: S) -> Value {
         Symbol::new(s).into()
+    }
+
+    pub fn rest_symbol<S: AsRef<str>>(s: Option<S>) -> Value {
+        Value::RestSymbol(s.map(Symbol::new))
     }
 
     #[must_use]

@@ -1,5 +1,3 @@
-use std::fmt::{self, Display, Formatter};
-
 use gc::{Finalize, Trace};
 
 use crate::{symbol, Arity, Result, Symbol, Value};
@@ -31,31 +29,38 @@ impl Compound {
         self.type_ == *symbol::CONS
     }
 
-    pub fn as_checked<const N: usize>(&self, expected_type: Symbol) -> Result<[Value; N]> {
-        if self.type_ == expected_type {
-            Arity::from(N).check(self.len())?;
-            Ok(self.values.clone().try_into().unwrap())
+    pub fn is_quote(&self) -> bool {
+        self.type_ == *symbol::QUOTE
+    }
+
+    pub fn is_quasiquote(&self) -> bool {
+        self.type_ == *symbol::QUASIQUOTE
+    }
+
+    pub fn is_unquote(&self) -> bool {
+        self.type_ == *symbol::UNQUOTE
+    }
+
+    pub fn is_unquote_splicing(&self) -> bool {
+        self.type_ == *symbol::UNQUOTE_SPLICING
+    }
+
+    pub fn as_array<const N: usize>(&self) -> Result<[Value; N]> {
+        Arity::from(N).check(self.len())?;
+        Ok(self.values.clone().try_into().unwrap())
+    }
+
+    pub fn as_checked_array<const N: usize>(&self, expected_type: Symbol) -> Result<[Value; N]> {
+        let actual_type = self.type_;
+        if actual_type == expected_type {
+            self.as_array()
         } else {
-            let actual_type = self.type_;
             Err(format!("expected {expected_type}, got {actual_type}"))
         }
     }
 
     pub fn as_cons(&self) -> Result<(Value, Value)> {
-        let values = self.as_checked::<2>(*symbol::CONS)?;
-        match values {
-            [head, tail] => Ok((head, tail)),
-        }
-    }
-}
-
-impl Display for Compound {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "(#{}", self.type_)?;
-        for value in &self.values {
-            write!(f, " {value}")?;
-        }
-        write!(f, ")")?;
-        Ok(())
+        let [head, tail] = self.as_checked_array::<2>(*symbol::CONS)?;
+        Ok((head, tail))
     }
 }

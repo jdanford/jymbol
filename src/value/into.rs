@@ -1,8 +1,6 @@
 use gc::Gc;
 
-use crate::{native, Error, Function, Result, Symbol, Value};
-
-use super::compound::Compound;
+use crate::{native, value::Compound, Error, Function, Result, Symbol, Value};
 
 impl TryInto<Symbol> for Value {
     type Error = Error;

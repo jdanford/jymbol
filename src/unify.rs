@@ -44,6 +44,9 @@ pub fn slice(patterns: &[Value], values: &[Value]) -> Result<Env> {
             let tail_env = slice(patterns, values)?;
             head_env.merge_unique(tail_env)
         }
-        _ => Err(format!("can't match {patterns:?} with {values:?}")),
+        _ => {
+            let values_list = Value::list(values);
+            Err(format!("can't match {patterns:?} with {values_list}"))
+        }
     }
 }

@@ -1,7 +1,4 @@
-use std::{
-    fmt::{self, Display, Formatter},
-    ops::{Deref, DerefMut},
-};
+use std::ops::{Deref, DerefMut};
 
 use gc::{Finalize, Trace};
 use im::HashMap;
@@ -77,17 +74,6 @@ impl Env {
 impl Default for Env {
     fn default() -> Self {
         Env::new()
-    }
-}
-
-impl Display for Env {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "(# env")?;
-        for (key, value) in self.iter() {
-            write!(f, " ({key} {value})",)?;
-        }
-        write!(f, ")")?;
-        Ok(())
     }
 }
 

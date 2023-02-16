@@ -1,5 +1,5 @@
-use crate::{Env, Result, Value, VM};
+use crate::{Context, Result, Value};
 
 pub trait Apply {
-    fn apply(&self, vm: &mut VM, env: &Env, args: &[Value]) -> Result<Value>;
+    fn apply(&self, ctx: &mut Context, args: Vec<Value>) -> Result<Value>;
 }

@@ -7,24 +7,27 @@ use std::{
 use gc::{unsafe_empty_trace, Finalize, Trace};
 use once_cell::sync::Lazy;
 
-use crate::{apply::Apply, Arity, Env, Result, ResultIterator, Value, VM};
+use crate::{apply::Apply, Arity, Context, Result, ResultIterator, Value};
 
-pub struct Context<'a> {
-    pub vm: &'a mut VM,
-    pub env: &'a Env,
-    pub args: &'a [Value],
+// pub struct Context<'a> {
+//     pub vm: &'a mut VM,
+//     pub env: Env,
+//     pub args: Vec<Value>,
+// }
+
+pub trait Args {
+    fn checked<const N: usize>(self) -> Result<[Value; N]>;
 }
 
-impl Context<'_> {
+impl Args for Vec<Value> {
     #[allow(clippy::missing_panics_doc)]
-    pub fn as_checked<const N: usize>(&self) -> Result<[Value; N]> {
-        Arity::from(N).check(self.args.len())?;
-        let vec = self.args.to_owned();
-        Ok(vec.try_into().unwrap())
+    fn checked<const N: usize>(self) -> Result<[Value; N]> {
+        Arity::from(N).check(self.len())?;
+        Ok(self.try_into().unwrap())
     }
 }
 
-pub type RawFunction = fn(&mut Context<'_>) -> Result<Value>;
+pub type RawFunction = fn(&mut Context<'_>, Vec<Value>) -> Result<Value>;
 
 #[derive(Clone, Finalize)]
 pub struct Function {
@@ -68,7 +71,11 @@ impl PartialOrd for Function {
 
 impl Debug for Function {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        f.debug_struct("native::Function").finish_non_exhaustive()
+        f.debug_struct("Function")
+            .field("id", &self.id)
+            .field("arity", &self.arity)
+            .field("eval_args", &self.eval_args)
+            .finish_non_exhaustive()
     }
 }
 
@@ -83,16 +90,14 @@ unsafe impl Trace for Function {
 }
 
 impl Apply for Function {
-    fn apply(&self, vm: &mut VM, env: &Env, args: &[Value]) -> Result<Value> {
+    fn apply(&self, ctx: &mut Context, args: Vec<Value>) -> Result<Value> {
         self.arity.check(args.len())?;
 
         if self.eval_args {
-            let args = &args.iter().map(|arg| vm.eval(env, arg)).try_collect()?;
-            let mut evaled_context = Context { vm, env, args };
-            return (self.f)(&mut evaled_context);
+            let evaled_args = args.iter().map(|arg| ctx.eval(arg)).try_collect()?;
+            (self.f)(ctx, evaled_args)
+        } else {
+            (self.f)(ctx, args)
         }
-
-        let mut context = Context { vm, env, args };
-        (self.f)(&mut context)
     }
 }

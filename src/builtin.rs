@@ -1,26 +1,28 @@
-use crate::{native, symbol, Env, Function, Result, ResultIterator, Value, VM};
+use crate::{native::Args, symbol, Context, Function, Result, ResultIterator, Value, VM};
 
-pub fn cons(context: &mut native::Context) -> Result<Value> {
-    let [head, tail] = context.as_checked::<2>()?;
+pub fn cons(_ctx: &mut Context, args: Vec<Value>) -> Result<Value> {
+    let [head, tail] = args.checked::<2>()?;
     Ok(Value::cons(head, tail))
 }
 
-pub fn fn_(context: &mut native::Context) -> Result<Value> {
-    let env = context.env.clone().into();
-    let [params_list, body] = context.as_checked::<2>()?;
+pub fn fn_(ctx: &mut Context, args: Vec<Value>) -> Result<Value> {
+    let env = ctx.env.clone().into();
+    let [params_list, body] = args.checked::<2>()?;
     let params = params_list.into_iter().try_collect()?;
     Ok(Function::new(env, params, body).into())
 }
 
-pub fn env(vm: &mut VM) -> Result<Env> {
-    let mut env = Env::new();
-    env = env.set(*symbol::NIL, (*symbol::NIL).into());
-    env = env.set(*symbol::TRUE, (*symbol::TRUE).into());
-    env = env.set(*symbol::FALSE, (*symbol::FALSE).into());
+pub fn context(vm: &mut VM) -> Result<Context> {
+    let mut ctx = Context::new(vm);
+    ctx.set(*symbol::NIL, (*symbol::NIL).into());
+    ctx.set(*symbol::TRUE, (*symbol::TRUE).into());
+    ctx.set(*symbol::FALSE, (*symbol::FALSE).into());
 
-    env = env.set("fn", Value::native_function(fn_, 2, false));
-    env = env.set("cons", Value::native_function(cons, 2, false));
-    env = env.set("list", vm.eval_str(&env, "(fn [...values] values)")?);
+    ctx.set("fn", Value::native_function(fn_, 2, false));
+    ctx.set("cons", Value::native_function(cons, 2, false));
 
-    Ok(env)
+    let list_fn = ctx.eval_str("(fn [...values] values)")?;
+    ctx.set("list", list_fn);
+
+    Ok(ctx)
 }

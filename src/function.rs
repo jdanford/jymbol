@@ -2,7 +2,7 @@ use std::fmt::{self, Display, Formatter};
 
 use gc::{Finalize, Gc, Trace};
 
-use crate::{apply::Apply, unify, Env, Result, ResultIterator, Value, VM};
+use crate::{apply::Apply, unify, Context, Env, Result, ResultIterator, Value};
 
 #[derive(Clone, PartialEq, PartialOrd, Debug, Trace, Finalize)]
 pub struct Function {
@@ -18,10 +18,14 @@ impl Function {
 }
 
 impl Apply for Function {
-    fn apply(&self, vm: &mut VM, env: &Env, args: &[Value]) -> Result<Value> {
-        let evaled_args = args.iter().map(|arg| vm.eval(env, arg)).try_collect()?;
+    fn apply(&self, ctx: &mut Context, args: Vec<Value>) -> Result<Value> {
+        let evaled_args = args.iter().map(|arg| ctx.eval(arg)).try_collect()?;
         let new_env = unify::slice(&self.params, &evaled_args)?;
-        vm.eval(&new_env, &self.body)
+        let mut new_ctx = Context {
+            vm: ctx.vm,
+            env: new_env,
+        };
+        new_ctx.eval(&self.body)
     }
 }
 

@@ -2,7 +2,7 @@ use chumsky::prelude::*;
 
 use crate::{
     parser::primitive::{float, string},
-    Symbol, Value,
+    Value,
 };
 
 const NON_SYMBOL_CHARS: &str = "()[]{}\"'`,@";
@@ -22,10 +22,6 @@ fn raw_symbol() -> impl Parser<char, String, Error = Simple<char>> {
     symbol_head.chain(symbol_tail).collect()
 }
 
-fn into_rest_symbol(s: Option<String>) -> Value {
-    Value::RestSymbol(s.map(Symbol::new))
-}
-
 fn raw_expr() -> impl Parser<char, Value, Error = Simple<char>> {
     recursive(|expr| {
         let blank = just('_').ignored().map(|_| Value::Blank);
@@ -34,7 +30,7 @@ fn raw_expr() -> impl Parser<char, Value, Error = Simple<char>> {
 
         let rest_symbol = just("...")
             .ignore_then(raw_symbol().or_not())
-            .map(into_rest_symbol)
+            .map(Value::rest_symbol)
             .labelled("rest_symbol");
 
         let number = float().map(Value::Number).labelled("number");

@@ -86,13 +86,13 @@ impl From<Symbol> for &'static str {
 
 impl Debug for Symbol {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        Debug::fmt(&self.0, f)
+        Debug::fmt(self.as_str(), f)
     }
 }
 
 impl Display for Symbol {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        f.write_str(self.as_str())
+        Display::fmt(self.as_str(), f)
     }
 }
 

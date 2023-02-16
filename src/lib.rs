@@ -7,6 +7,7 @@
 mod apply;
 mod arity;
 pub mod builtin;
+mod context;
 mod env;
 mod error;
 mod function;
@@ -19,6 +20,7 @@ mod value;
 mod vm;
 
 pub use arity::Arity;
+pub use context::Context;
 pub use env::Env;
 pub use error::{Error, Result};
 pub use function::Function;
