@@ -1,6 +1,6 @@
 use gc::Gc;
 
-use crate::{native, symbol, value::Compound, Arity, Function, Symbol, Value};
+use crate::{function::Closure, symbol, value::Compound, FnId, Symbol, Value};
 
 impl From<Symbol> for Value {
     fn from(sym: Symbol) -> Self {
@@ -20,18 +20,6 @@ impl From<String> for Value {
     }
 }
 
-impl From<Function> for Value {
-    fn from(fn_: Function) -> Self {
-        Value::Function(Gc::new(fn_))
-    }
-}
-
-impl From<native::Function> for Value {
-    fn from(fn_: native::Function) -> Self {
-        Value::NativeFunction(Gc::new(fn_))
-    }
-}
-
 impl Value {
     pub fn symbol<S: AsRef<str>>(s: S) -> Value {
         Symbol::new(s).into()
@@ -47,17 +35,10 @@ impl Value {
         Value::Compound(Gc::new(compound))
     }
 
-    pub fn native_function<A: Into<Arity>>(
-        f: native::RawFunction,
-        arity: A,
-        eval_args: bool,
-    ) -> Value {
-        native::Function::new(f, arity, eval_args).into()
-    }
-
     #[must_use]
-    pub fn nil() -> Value {
-        (*symbol::NIL).into()
+    pub fn closure(fn_id: FnId, values: Vec<Value>) -> Value {
+        let closure = Closure { fn_id, values };
+        Value::Closure(Gc::new(closure))
     }
 
     pub fn cons(head: Value, tail: Value) -> Value {

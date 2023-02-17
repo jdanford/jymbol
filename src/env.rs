@@ -5,7 +5,7 @@ use im::HashMap;
 
 use crate::{Result, Symbol, Value};
 
-#[derive(Clone, PartialEq, PartialOrd, Debug, Finalize)]
+#[derive(Clone, PartialEq, Debug, Finalize)]
 pub struct Env {
     pub map: HashMap<Symbol, Value>,
 }

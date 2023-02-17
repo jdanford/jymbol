@@ -2,7 +2,7 @@ use std::ops::{RangeFrom, RangeFull};
 
 use crate::Result;
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Arity {
     Exactly(usize),
     AtLeast(usize),

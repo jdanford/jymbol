@@ -1,6 +1,6 @@
 use gc::Gc;
 
-use crate::{native, value::Compound, Error, Function, Result, Symbol, Value};
+use crate::{value::Compound, Error, FnId, Result, Symbol, Value};
 
 impl TryInto<Symbol> for Value {
     type Error = Error;
@@ -41,17 +41,9 @@ impl Value {
         }
     }
 
-    pub fn as_function(&self) -> Result<Gc<Function>> {
-        if let Value::Function(fn_) = self {
-            Ok(fn_.clone())
-        } else {
-            Err(format!("expected function, got {self}"))
-        }
-    }
-
-    pub fn as_native_function(&self) -> Result<Gc<native::Function>> {
-        if let Value::NativeFunction(fn_) = self {
-            Ok(fn_.clone())
+    pub fn as_native_function(&self) -> Result<FnId> {
+        if let Value::NativeFunction(fn_id) = self {
+            Ok(*fn_id)
         } else {
             Err(format!("expected native function, got {self}"))
         }

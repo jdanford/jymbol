@@ -94,8 +94,11 @@ impl Display for Value {
             }
             Value::String(s) => Debug::fmt(&s, f),
             Value::Compound(compound) => Display::fmt(&compound, f),
-            Value::Function(fn_) => Display::fmt(&fn_, f),
-            Value::NativeFunction(fn_) => Display::fmt(&fn_, f),
+            Value::Closure(fn_) => Display::fmt(&fn_, f),
+            Value::NativeFunction(fn_id) => {
+                let n = u32::from(*fn_id);
+                write!(f, "(#native-fn {n})")
+            }
         }
     }
 }

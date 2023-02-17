@@ -2,7 +2,7 @@ use gc::{Finalize, Trace};
 
 use crate::{symbol, Arity, Result, Symbol, Value};
 
-#[derive(Clone, PartialEq, PartialOrd, Debug, Trace, Finalize)]
+#[derive(Clone, PartialEq, Debug, Trace, Finalize)]
 pub struct Compound {
     pub type_: Symbol,
     pub values: Vec<Value>,
