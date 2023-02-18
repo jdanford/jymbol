@@ -42,8 +42,8 @@ impl Value {
     }
 
     pub fn as_native_function(&self) -> Result<FnId> {
-        if let Value::NativeFunction(fn_id) = self {
-            Ok(*fn_id)
+        if let &Value::NativeFunction(fn_id) = self {
+            Ok(fn_id)
         } else {
             Err(format!("expected native function, got {self}"))
         }

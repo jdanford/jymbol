@@ -1,12 +1,12 @@
-use crate::{FnId, Symbol};
+use crate::{FnId, Symbol, Value};
 
 use super::op;
 
-#[derive(Clone, Copy, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub enum Instruction {
     Nop,
     Drop,
-    Number(f64),
+    Value(Value),
     Compound(Symbol, u8),
     Closure(FnId, u8),
     UnOp(op::Unary),
@@ -15,6 +15,6 @@ pub enum Instruction {
     Set(u16, u16),
     Jump(u32),
     Branch(u32, u32),
-    Frame(u8),
+    Call(u8),
     Ret,
 }

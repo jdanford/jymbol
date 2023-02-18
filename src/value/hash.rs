@@ -14,20 +14,11 @@ impl<T: Hasher> ValueHasher for T {}
 impl Hash for Value {
     fn hash<H: Hasher>(&self, state: &mut H) {
         match self {
-            Value::Blank => {
-                state.write_symbol(*symbol::BLANK);
-            }
-            Value::Symbol(sym) => {
+            &Value::Symbol(sym) => {
                 state.write_symbol(*symbol::SYMBOL);
-                state.write_symbol(*sym);
+                state.write_symbol(sym);
             }
-            Value::RestSymbol(maybe_sym) => {
-                state.write_symbol(*symbol::REST_SYMBOL);
-                if let Some(sym) = maybe_sym {
-                    state.write_symbol(*sym);
-                }
-            }
-            Value::Number(num) => {
+            &Value::Number(num) => {
                 state.write_symbol(*symbol::NUMBER);
                 state.write_u64(num.to_bits());
             }
@@ -39,9 +30,9 @@ impl Hash for Value {
                 state.write_symbol(*symbol::FN);
                 state.write_u32(closure.fn_id.into());
             }
-            Value::NativeFunction(fn_id) => {
+            &Value::NativeFunction(fn_id) => {
                 state.write_symbol(*symbol::NATIVE_FN);
-                state.write_u32((*fn_id).into());
+                state.write_u32((fn_id).into());
             }
             Value::Compound(compound) => {
                 state.write_symbol(compound.type_);

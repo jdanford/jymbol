@@ -18,6 +18,15 @@ pub enum Frame {
     Native(NativeFrame),
 }
 
+impl Frame {
+    pub fn locals(&mut self) -> &mut [Value] {
+        match self {
+            Frame::Compiled(compiled_frame) => &mut compiled_frame.locals,
+            Frame::Native(native_frame) => &mut native_frame.locals,
+        }
+    }
+}
+
 impl From<CompiledFrame> for Frame {
     fn from(frame: CompiledFrame) -> Self {
         Frame::Compiled(frame)

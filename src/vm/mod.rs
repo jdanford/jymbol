@@ -5,7 +5,7 @@ mod op;
 pub use frame::{CompiledFrame, Frame, NativeFrame};
 pub use instruction::Instruction;
 
-use std::collections::HashMap;
+use im::HashMap;
 
 use crate::{function, FnId, Result, Symbol, Value};
 
@@ -37,9 +37,16 @@ impl VM {
         }
     }
 
-    pub fn closure_id(&mut self, closure_type: &ClosureType) -> FnId {
-        if let Some(id) = self.closure_ids.get(closure_type) {
-            *id
+    #[must_use]
+    fn relative_frame(&mut self, frame_index: u16) -> &mut Frame {
+        let max_index = self.frames.len() - 1;
+        let i = max_index - frame_index as usize;
+        &mut self.frames[i]
+    }
+
+    fn closure_id(&mut self, closure_type: &ClosureType) -> FnId {
+        if let Some(&id) = self.closure_ids.get(closure_type) {
+            id
         } else {
             let id = FnId::next();
             self.closure_ids.insert(closure_type.clone(), id);
@@ -78,35 +85,34 @@ impl VM {
 
     fn step(&mut self, mut frame: CompiledFrame) -> Result<Option<Frame>> {
         let func = self.compiled_functions.get(&frame.fn_id).unwrap();
-        let inst = func.code[frame.pc as usize];
+        let inst = &func.code[frame.pc as usize];
         frame.pc += 1;
 
         match inst {
-            Instruction::Nop => {}
-            Instruction::Drop => {
+            &Instruction::Nop => {}
+            &Instruction::Drop => {
                 self.values.pop();
             }
-            Instruction::Number(num) => {
-                let value = Value::from(num);
-                self.values.push(value);
+            Instruction::Value(value) => {
+                self.values.push(value.clone());
             }
-            Instruction::Compound(type_, value_count) => {
+            &Instruction::Compound(type_, value_count) => {
                 let values = self.pop_values(value_count as usize);
                 let value = Value::compound(type_, values);
                 self.values.push(value);
             }
-            Instruction::Closure(fn_id, value_count) => {
+            &Instruction::Closure(fn_id, value_count) => {
                 let values = self.pop_values(value_count as usize);
                 let value = Value::closure(fn_id, values);
                 self.values.push(value);
             }
-            Instruction::UnOp(op) => {
+            &Instruction::UnOp(op) => {
                 let value = self.pop_value();
                 let x: f64 = value.try_into()?;
                 let y = op.apply(x);
                 self.values.push(y.into());
             }
-            Instruction::BinOp(op) => {
+            &Instruction::BinOp(op) => {
                 let value_y = self.pop_value();
                 let value_x = self.pop_value();
                 let x: f64 = value_x.try_into()?;
@@ -114,20 +120,22 @@ impl VM {
                 let z = op.apply(x, y);
                 self.values.push(z.into());
             }
-            Instruction::Get(frame_index, index) => {
-                // TODO: get correct frame using `frame_index`
-                let value = frame.locals[index as usize].clone();
+            &Instruction::Get(frame_index, index) => {
+                let frame = self.relative_frame(frame_index);
+                let locals = frame.locals();
+                let value = locals[index as usize].clone();
                 self.values.push(value);
             }
-            Instruction::Set(frame_index, index) => {
-                // TODO: get correct frame using `frame_index`
+            &Instruction::Set(frame_index, index) => {
                 let value = self.pop_value();
-                frame.locals[index as usize] = value;
+                let frame = self.relative_frame(frame_index);
+                let locals = frame.locals();
+                locals[index as usize] = value;
             }
-            Instruction::Jump(jmp_pc) => {
+            &Instruction::Jump(jmp_pc) => {
                 frame.pc = jmp_pc;
             }
-            Instruction::Branch(true_pc, false_pc) => {
+            &Instruction::Branch(true_pc, false_pc) => {
                 let value = self.pop_value();
                 if value.is_truthy() {
                     frame.pc = true_pc;
@@ -135,7 +143,7 @@ impl VM {
                     frame.pc = false_pc;
                 }
             }
-            Instruction::Frame(arity) => {
+            &Instruction::Call(arity) => {
                 let func = self.pop_value();
                 let locals = self.pop_values(arity as usize);
                 match func {
@@ -158,7 +166,7 @@ impl VM {
                     }
                 }
             }
-            Instruction::Ret => {
+            &Instruction::Ret => {
                 return Ok(None);
             }
         }

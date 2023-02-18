@@ -81,10 +81,7 @@ impl Display for Compound {
 impl Display for Value {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            Value::Blank => write!(f, "_"),
-            Value::Symbol(sym) => Display::fmt(&sym, f),
-            Value::RestSymbol(None) => write!(f, "..."),
-            Value::RestSymbol(Some(sym)) => write!(f, "{sym}..."),
+            Value::Symbol(sym) => Display::fmt(sym, f),
             Value::Number(num) => {
                 if num.fract() == 0.0 {
                     write!(f, "{num:.0}")
@@ -92,11 +89,11 @@ impl Display for Value {
                     write!(f, "{num}")
                 }
             }
-            Value::String(s) => Debug::fmt(&s, f),
-            Value::Compound(compound) => Display::fmt(&compound, f),
-            Value::Closure(fn_) => Display::fmt(&fn_, f),
-            Value::NativeFunction(fn_id) => {
-                let n = u32::from(*fn_id);
+            Value::String(s) => Debug::fmt(s, f),
+            Value::Compound(compound) => Display::fmt(compound, f),
+            Value::Closure(fn_) => Display::fmt(fn_, f),
+            &Value::NativeFunction(fn_id) => {
+                let n = u32::from(fn_id);
                 write!(f, "(#native-fn {n})")
             }
         }

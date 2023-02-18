@@ -14,9 +14,7 @@ use crate::{function, symbol, FnId, Symbol};
 
 #[derive(Clone, PartialEq, Debug, Trace, Finalize)]
 pub enum Value {
-    Blank,
     Symbol(Symbol),
-    RestSymbol(Option<Symbol>),
     Number(f64),
     String(Gc<String>),
     Compound(Gc<Compound>),

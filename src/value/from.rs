@@ -25,10 +25,6 @@ impl Value {
         Symbol::new(s).into()
     }
 
-    pub fn rest_symbol<S: AsRef<str>>(s: Option<S>) -> Value {
-        Value::RestSymbol(s.map(Symbol::new))
-    }
-
     #[must_use]
     pub fn compound(type_: Symbol, values: Vec<Value>) -> Value {
         let compound = Compound { type_, values };

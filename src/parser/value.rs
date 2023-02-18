@@ -6,32 +6,24 @@ use crate::{
 };
 
 const NON_SYMBOL_CHARS: &str = "()[]{}\"'`,@";
-const NON_SYMBOL_HEAD_CHARS: &str = "-_.";
 
 fn is_symbol(c: char) -> bool {
     !c.is_control() && !c.is_whitespace() && !NON_SYMBOL_CHARS.contains(c)
 }
 
 fn is_symbol_head(c: char) -> bool {
-    is_symbol(c) && !c.is_ascii_digit() && !NON_SYMBOL_HEAD_CHARS.contains(c)
+    is_symbol(c) && !c.is_ascii_digit()
 }
 
 fn raw_symbol() -> impl Parser<char, String, Error = Simple<char>> {
-    let symbol_head = filter(|c| is_symbol_head(*c));
-    let symbol_tail = filter(|c| is_symbol(*c)).repeated();
+    let symbol_head = filter(|&c| is_symbol_head(c));
+    let symbol_tail = filter(|&c| is_symbol(c)).repeated();
     symbol_head.chain(symbol_tail).collect()
 }
 
 fn raw_expr() -> impl Parser<char, Value, Error = Simple<char>> {
     recursive(|expr| {
-        let blank = just('_').ignored().map(|_| Value::Blank);
-
         let symbol = raw_symbol().map(Value::symbol).labelled("symbol");
-
-        let rest_symbol = just("...")
-            .ignore_then(raw_symbol().or_not())
-            .map(Value::rest_symbol)
-            .labelled("rest_symbol");
 
         let number = float().map(Value::Number).labelled("number");
 
@@ -72,9 +64,6 @@ fn raw_expr() -> impl Parser<char, Value, Error = Simple<char>> {
             .labelled("square_list");
 
         choice((
-            blank,
-            symbol,
-            rest_symbol,
             number,
             string,
             quote,
@@ -83,6 +72,7 @@ fn raw_expr() -> impl Parser<char, Value, Error = Simple<char>> {
             unquote_splicing,
             list,
             square_list,
+            symbol,
         ))
         .padded()
     })

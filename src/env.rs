@@ -63,8 +63,8 @@ impl Env {
     #[must_use]
     pub fn set_all(&self, params: &[Symbol], values: &[Value]) -> Env {
         let mut env = self.clone();
-        for (param, value) in params.iter().zip(values) {
-            env = env.set(*param, value.clone());
+        for (&param, value) in params.iter().zip(values) {
+            env = env.set(param, value.clone());
         }
 
         env

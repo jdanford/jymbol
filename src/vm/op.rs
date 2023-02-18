@@ -12,13 +12,13 @@ pub enum Unary {
 impl Unary {
     pub fn apply(self, x: f64) -> f64 {
         match self {
-            Abs => x.abs(),
-            Neg => -x,
-            Sqrt => x.sqrt(),
-            Trunc => x.trunc(),
-            Round => x.round(),
-            Floor => x.floor(),
-            Ceil => x.ceil(),
+            Unary::Abs => x.abs(),
+            Unary::Neg => -x,
+            Unary::Sqrt => x.sqrt(),
+            Unary::Trunc => x.trunc(),
+            Unary::Round => x.round(),
+            Unary::Floor => x.floor(),
+            Unary::Ceil => x.ceil(),
         }
     }
 }
@@ -61,23 +61,23 @@ impl Binary {
     #[allow(clippy::cast_possible_truncation, clippy::float_cmp)]
     pub fn apply(self, x: f64, y: f64) -> f64 {
         match self {
-            Add => x + y,
-            Sub => x - y,
-            Mul => x * y,
-            Div => x / y,
-            Mod => x % y,
-            Pow => x.powf(y),
-            And => wrap_int((x as i64) & (y as i64)),
-            Or => wrap_int((x as i64) | (y as i64)),
-            Xor => wrap_int((x as i64) ^ (y as i64)),
-            Shl => wrap_int((x as i64) << (y as i64)),
-            Shr => wrap_int((x as i64) >> (y as i64)),
-            Eq => wrap_bool(x == y),
-            Ne => wrap_bool(x != y),
-            Lt => wrap_bool(x < y),
-            Gt => wrap_bool(x > y),
-            Le => wrap_bool(x <= y),
-            Ge => wrap_bool(x >= y),
+            Binary::Add => x + y,
+            Binary::Sub => x - y,
+            Binary::Mul => x * y,
+            Binary::Div => x / y,
+            Binary::Mod => x % y,
+            Binary::Pow => x.powf(y),
+            Binary::And => wrap_int((x as i64) & (y as i64)),
+            Binary::Or => wrap_int((x as i64) | (y as i64)),
+            Binary::Xor => wrap_int((x as i64) ^ (y as i64)),
+            Binary::Shl => wrap_int((x as i64) << (y as i64)),
+            Binary::Shr => wrap_int((x as i64) >> (y as i64)),
+            Binary::Eq => wrap_bool(x == y),
+            Binary::Ne => wrap_bool(x != y),
+            Binary::Lt => wrap_bool(x < y),
+            Binary::Gt => wrap_bool(x > y),
+            Binary::Le => wrap_bool(x <= y),
+            Binary::Ge => wrap_bool(x >= y),
         }
     }
 }

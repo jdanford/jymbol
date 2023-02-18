@@ -1,9 +1,9 @@
 mod closure;
 mod compiled;
-mod id;
+mod fn_id;
 mod native;
 
 pub use closure::Closure;
 pub use compiled::Compiled;
-pub use id::FnId;
+pub use fn_id::FnId;
 pub use native::{Native, RawFn};

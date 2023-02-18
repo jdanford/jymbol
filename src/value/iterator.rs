@@ -16,7 +16,7 @@ impl Iter {
                 self.value = tail;
                 Ok(Some(head))
             }
-            Value::Symbol(sym) if *sym == *symbol::NIL => Ok(None),
+            &Value::Symbol(sym) if sym == *symbol::NIL => Ok(None),
             _ => Err(format!("expected cons or nil, got {}", self.value)),
         }
     }

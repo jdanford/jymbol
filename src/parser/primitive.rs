@@ -51,6 +51,6 @@ pub fn string() -> impl Parser<char, String, Error = Simple<char>> {
             )),
     );
 
-    let string_body = filter(|c| *c != '\\' && *c != '"').or(escape).repeated();
+    let string_body = filter(|&c| c != '\\' && c != '"').or(escape).repeated();
     string_body.delimited_by(just('"'), just('"')).collect()
 }
