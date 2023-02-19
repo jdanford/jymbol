@@ -8,6 +8,7 @@ pub enum Expr {
     Value(Value),
     Var(Symbol),
     List(Vec<Expr>),
+    Do(Vec<Expr>),
     Call {
         fn_: Box<Expr>,
         args: Vec<Expr>,
@@ -32,8 +33,5 @@ pub enum Expr {
     // },
     // Recur {
     //     values: Vec<Expr>,
-    // },
-    // Do {
-    //     exprs: Vec<Expr>,
     // },
 }

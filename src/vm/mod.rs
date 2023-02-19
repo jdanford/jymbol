@@ -1,4 +1,5 @@
 mod frame;
+mod step;
 
 pub use frame::Frame;
 
@@ -7,7 +8,7 @@ use im::HashMap;
 use crate::{
     compiler::{context::Context, Compiler},
     function::{self, RawFn},
-    Arity, Env, Expr, FnId, Inst, Result, Symbol, Value,
+    Arity, Env, Expr, FnId, Inst, Result, ResultIterator, Symbol, Value,
 };
 
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
@@ -40,7 +41,7 @@ impl VM {
 
     fn relative_frame(&mut self, frame_index: u16) -> &mut Frame {
         let max_index = self.frames.len() - 1;
-        let i = max_index - frame_index as usize;
+        let i = max_index - frame_index as usize - 1;
         &mut self.frames[i]
     }
 
@@ -79,21 +80,24 @@ impl VM {
     }
 
     pub fn eval(&mut self, env: &Env, expr: &Expr) -> Result<Value> {
+        let free_vars = expr.free_vars();
+
         let mut context = Context::new();
         let locals = context.locals_mut();
-        for (&var, _) in env.iter() {
+        for &var in free_vars.iter() {
             locals.declare(var)?;
         }
 
         let mut compiler = Compiler::new(self);
         context = compiler.compile(context, expr)?;
         context.code_mut().emit(Inst::Ret);
+
         let code = context.code_mut().extract();
         let fn_id = FnId::next();
         let function = function::Compiled::new(fn_id, 0, code);
         self.compiled_functions.insert(fn_id, function);
 
-        let local_values = env.values().cloned().collect();
+        let local_values = free_vars.iter().map(|&var| env.get(var)).try_collect()?;
         let frame = Frame::compiled(fn_id, local_values);
         self.frames.push(frame);
         self.run()?;
@@ -122,106 +126,25 @@ impl VM {
         Ok(())
     }
 
-    fn step(&mut self, mut current_frame: frame::Compiled) -> Result<Option<Frame>> {
-        let func = self.compiled_functions.get(&current_frame.fn_id).unwrap();
-        let inst = &func.code[current_frame.pc as usize];
-        current_frame.pc += 1;
-
-        match inst {
-            &Inst::Nop => {}
-            &Inst::Drop => {
-                self.values.pop();
-            }
-            Inst::Value(value) => {
-                self.values.push(value.clone());
-            }
-            &Inst::List(value_count) => {
-                let values = self.pop_values(value_count as usize);
-                let value = Value::list(values);
-                self.values.push(value);
-            }
-            &Inst::Compound(type_, value_count) => {
-                let values = self.pop_values(value_count as usize);
-                let value = Value::compound(type_, values);
-                self.values.push(value);
-            }
-            &Inst::Closure(fn_id, value_count) => {
-                let values = self.pop_values(value_count as usize);
-                let value = Value::closure(fn_id, values);
-                self.values.push(value);
-            }
-            &Inst::UnOp(op) => {
-                let value = self.pop_value();
-                let x: f64 = value.try_into()?;
-                let y = op.apply(x);
-                self.values.push(y.into());
-            }
-            &Inst::BinOp(op) => {
-                let value_y = self.pop_value();
-                let value_x = self.pop_value();
-                let x: f64 = value_x.try_into()?;
-                let y: f64 = value_y.try_into()?;
-                let z = op.apply(x, y);
-                self.values.push(z.into());
-            }
-            &Inst::Get(frame_index, index) => {
-                let locals = if frame_index == 0 {
-                    &current_frame.locals
-                } else {
-                    self.relative_frame(frame_index - 1).locals()
-                };
-                let value = locals[index as usize].clone();
-                self.values.push(value);
-            }
-            &Inst::Set(frame_index, index) => {
-                let value = self.pop_value();
-                let locals = if frame_index == 0 {
-                    &mut current_frame.locals
-                } else {
-                    self.relative_frame(frame_index - 1).locals_mut()
-                };
-                locals[index as usize] = value;
-            }
-            &Inst::Jump(jmp_pc) => {
-                current_frame.pc = jmp_pc;
-            }
-            &Inst::JumpIf(jmp_pc) => {
-                let value = self.pop_value();
-                if value.is_truthy() {
-                    current_frame.pc = jmp_pc;
-                }
-            }
-            &Inst::JumpIfNot(jmp_pc) => {
-                let value = self.pop_value();
-                if !value.is_truthy() {
-                    current_frame.pc = jmp_pc;
-                }
-            }
-            &Inst::Call(arity) => {
-                let func = self.pop_value();
-                let mut locals = Vec::new();
-                let new_frame = match func {
-                    Value::Closure(ref closure) => {
-                        locals.extend(closure.values.clone());
-                        locals.extend(self.pop_values(arity as usize));
-                        Ok(Frame::compiled(closure.fn_id, locals))
-                    }
-                    Value::NativeFunction(fn_id) => {
-                        locals.extend(self.pop_values(arity as usize));
-                        Ok(Frame::native(fn_id, locals))
-                    }
-                    _ => Err(format!("can't call {func}")),
-                }?;
-
-                self.frames.push(current_frame.into());
-                return Ok(Some(new_frame));
-            }
-            &Inst::Ret => {
-                return Ok(None);
-            }
+    fn frame_from_func(&mut self, func: &Value, arity: u16) -> Result<Frame> {
+        match func {
+            Value::Closure(closure) => Ok(self.compiled_frame(closure, arity)),
+            &Value::NativeFunction(fn_id) => Ok(self.native_frame(fn_id, arity)),
+            _ => Err(format!("can't call {func}")),
         }
+    }
 
-        Ok(Some(current_frame.into()))
+    fn compiled_frame(&mut self, closure: &function::Closure, arity: u16) -> Frame {
+        let mut locals = Vec::new();
+        locals.extend(closure.values.clone());
+        locals.extend(self.pop_values(arity as usize));
+        Frame::compiled(closure.fn_id, locals)
+    }
+
+    fn native_frame(&mut self, fn_id: FnId, arity: u16) -> Frame {
+        let mut locals = Vec::new();
+        locals.extend(self.pop_values(arity as usize));
+        Frame::native(fn_id, locals)
     }
 }
 

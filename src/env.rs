@@ -32,9 +32,11 @@ impl Env {
         }
     }
 
-    #[must_use]
-    pub fn get(&self, sym: Symbol) -> Option<Value> {
-        self.map.get(&sym).cloned()
+    pub fn get(&self, sym: Symbol) -> Result<Value> {
+        self.map
+            .get(&sym)
+            .cloned()
+            .ok_or_else(|| format!("`{sym}` is not defined"))
     }
 
     #[must_use]

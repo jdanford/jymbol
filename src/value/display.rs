@@ -10,8 +10,7 @@ impl Compound {
             write!(f, " {value}")?;
         }
 
-        write!(f, ")")?;
-        Ok(())
+        write!(f, ")")
     }
 
     fn fmt_list(&self, f: &mut Formatter<'_>) -> fmt::Result {
@@ -27,36 +26,27 @@ impl Compound {
             write!(f, "{value}")?;
         }
 
-        write!(f, ")")?;
-        Ok(())
+        write!(f, ")")
     }
 
     fn fmt_quote(&self, f: &mut Formatter<'_>) -> fmt::Result {
         let [value] = self.as_array().unwrap();
-        write!(f, "'")?;
-        write!(f, "{value}")?;
-        Ok(())
+        write!(f, "'{value}")
     }
 
     fn fmt_quasiquote(&self, f: &mut Formatter<'_>) -> fmt::Result {
         let [value] = self.as_array().unwrap();
-        write!(f, "`")?;
-        write!(f, "{value}")?;
-        Ok(())
+        write!(f, "`{value}")
     }
 
     fn fmt_unquote(&self, f: &mut Formatter<'_>) -> fmt::Result {
         let [value] = self.as_array().unwrap();
-        write!(f, ",")?;
-        write!(f, "{value}")?;
-        Ok(())
+        write!(f, ",{value}")
     }
 
     fn fmt_unquote_splicing(&self, f: &mut Formatter<'_>) -> fmt::Result {
         let [value] = self.as_array().unwrap();
-        write!(f, ",@")?;
-        write!(f, "{value}")?;
-        Ok(())
+        write!(f, ",@{value}")
     }
 }
 

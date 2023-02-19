@@ -16,7 +16,7 @@ impl Expr {
     pub fn free_vars(&self) -> HashSet<Symbol> {
         match self {
             &Expr::Var(var) => single(var),
-            Expr::List(exprs) => exprs.iter().map(Expr::free_vars).sum(),
+            Expr::List(exprs) | Expr::Do(exprs) => exprs.iter().map(Expr::free_vars).sum(),
             Expr::Call { args, .. } => args.iter().map(Expr::free_vars).sum(),
             Expr::Fn { params, body } => {
                 let body_vars = body.free_vars();
