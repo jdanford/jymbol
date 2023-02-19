@@ -1,25 +1,41 @@
 use crate::{FnId, Value};
 
-#[allow(clippy::module_name_repetitions)]
-pub struct CompiledFrame {
+pub struct Compiled {
     pub fn_id: FnId,
     pub locals: Vec<Value>,
     pub pc: u32,
 }
 
-#[allow(clippy::module_name_repetitions)]
-pub struct NativeFrame {
+pub struct Native {
     pub fn_id: FnId,
     pub locals: Vec<Value>,
 }
 
 pub enum Frame {
-    Compiled(CompiledFrame),
-    Native(NativeFrame),
+    Compiled(Compiled),
+    Native(Native),
 }
 
 impl Frame {
-    pub fn locals(&mut self) -> &mut [Value] {
+    pub fn compiled(fn_id: FnId, locals: Vec<Value>) -> Self {
+        Frame::Compiled(Compiled {
+            fn_id,
+            locals,
+            pc: 0,
+        })
+    }
+
+    pub fn native(fn_id: FnId, locals: Vec<Value>) -> Self {
+        Frame::Native(Native { fn_id, locals })
+    }
+
+    pub fn locals(&self) -> &[Value] {
+        match self {
+            Frame::Compiled(compiled_frame) => &compiled_frame.locals,
+            Frame::Native(native_frame) => &native_frame.locals,
+        }
+    }
+    pub fn locals_mut(&mut self) -> &mut [Value] {
         match self {
             Frame::Compiled(compiled_frame) => &mut compiled_frame.locals,
             Frame::Native(native_frame) => &mut native_frame.locals,
@@ -27,14 +43,14 @@ impl Frame {
     }
 }
 
-impl From<CompiledFrame> for Frame {
-    fn from(frame: CompiledFrame) -> Self {
+impl From<Compiled> for Frame {
+    fn from(frame: Compiled) -> Self {
         Frame::Compiled(frame)
     }
 }
 
-impl From<NativeFrame> for Frame {
-    fn from(frame: NativeFrame) -> Self {
+impl From<Native> for Frame {
+    fn from(frame: Native) -> Self {
         Frame::Native(frame)
     }
 }

@@ -2,12 +2,16 @@ mod frame;
 mod instruction;
 mod op;
 
-pub use frame::{CompiledFrame, Frame, NativeFrame};
+pub use frame::Frame;
 pub use instruction::Inst;
 
 use im::HashMap;
 
-use crate::{function, Expr, FnId, Result, Symbol, Value};
+use crate::{
+    compiler::{context::Context, Compiler},
+    function::{self, RawFn},
+    Arity, Expr, FnId, Result, Symbol, Value,
+};
 
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
 pub struct ClosureType {
@@ -44,14 +48,32 @@ impl VM {
         &mut self.frames[i]
     }
 
-    pub fn closure_id(&mut self, closure_type: &ClosureType) -> FnId {
+    pub fn id_for_closure_type(&mut self, closure_type: &ClosureType) -> Option<FnId> {
+        self.closure_ids.get(closure_type).copied()
+    }
+
+    pub fn register_closure(&mut self, closure_type: &ClosureType, code: Vec<Inst>) -> FnId {
         if let Some(&id) = self.closure_ids.get(closure_type) {
             id
         } else {
             let id = FnId::next();
             self.closure_ids.insert(closure_type.clone(), id);
+
+            let compiled_function = function::Compiled {
+                arity: Arity::Exactly(closure_type.arity),
+                fn_id: id,
+                code,
+            };
+            self.compiled_functions.insert(id, compiled_function);
             id
         }
+    }
+
+    pub fn register_native<A: Into<Arity>>(&mut self, function: RawFn, arity: A) -> FnId {
+        let id = FnId::next();
+        let fn_ = function::Native::new(id, function, arity);
+        self.native_functions.insert(id, fn_);
+        id
     }
 
     fn pop_value(&mut self) -> Value {
@@ -62,6 +84,28 @@ impl VM {
         let len = self.values.len();
         let i = len - count;
         self.values.split_off(i)
+    }
+
+    pub fn eval(&mut self, expr: &Expr) -> Result<Value> {
+        let mut context = Context::new();
+        let mut compiler = Compiler::new(self);
+        context = compiler.compile(context, expr)?;
+        let code = context.extract_code();
+        let fn_id = FnId::next();
+        let function = function::Compiled {
+            arity: 0.into(),
+            code,
+            fn_id,
+        };
+        self.compiled_functions.insert(fn_id, function);
+
+        let frame = Frame::compiled(fn_id, vec![]);
+        self.frames.push(frame);
+        self.run()?;
+
+        self.values
+            .pop()
+            .ok_or_else(|| "stack is empty".to_string())
     }
 
     fn run(&mut self) -> Result<()> {
@@ -83,7 +127,7 @@ impl VM {
         Ok(())
     }
 
-    fn step(&mut self, mut frame: CompiledFrame) -> Result<Option<Frame>> {
+    fn step(&mut self, mut frame: frame::Compiled) -> Result<Option<Frame>> {
         let func = self.compiled_functions.get(&frame.fn_id).unwrap();
         let inst = &func.code[frame.pc as usize];
         frame.pc += 1;
@@ -129,7 +173,7 @@ impl VM {
             &Inst::Set(frame_index, index) => {
                 let value = self.pop_value();
                 let frame = self.relative_frame(frame_index);
-                let locals = frame.locals();
+                let locals = frame.locals_mut();
                 locals[index as usize] = value;
             }
             &Inst::Jump(jmp_pc) => {
@@ -153,17 +197,12 @@ impl VM {
                 match func {
                     Value::Closure(ref closure) => {
                         locals.extend(closure.values.clone());
-
-                        let new_frame = Frame::Compiled(CompiledFrame {
-                            fn_id: closure.fn_id,
-                            locals,
-                            pc: 0,
-                        });
+                        let new_frame = Frame::compiled(closure.fn_id, locals);
                         self.frames.push(frame.into());
                         return Ok(Some(new_frame));
                     }
                     Value::NativeFunction(fn_id) => {
-                        let new_frame = Frame::Native(NativeFrame { fn_id, locals });
+                        let new_frame = Frame::native(fn_id, locals);
                         self.frames.push(frame.into());
                         return Ok(Some(new_frame));
                     }

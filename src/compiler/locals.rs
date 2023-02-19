@@ -21,14 +21,17 @@ impl Locals {
             return Err(format!("`{var}` is already defined"));
         }
 
-        let index = u16::try_from(self.vars.len()).map_err(|_| "index is out of range")?;
+        let index = u16::try_from(self.vars.len()).expect("index is out of range");
         self.vars.push(var);
         self.indices.insert(var, index);
         Ok(index)
     }
 
-    pub fn declare_all<I: IntoIterator<Item = Symbol>>(&mut self, vars: I) -> Result<Vec<u16>> {
-        vars.into_iter().map(|var| self.declare(var)).try_collect()
+    pub fn declare_all<'a, I: IntoIterator<Item = &'a Symbol>>(
+        &mut self,
+        vars: I,
+    ) -> Result<Vec<u16>> {
+        vars.into_iter().map(|&var| self.declare(var)).try_collect()
     }
 
     pub fn get_index(&self, var: Symbol) -> Option<u16> {

@@ -35,21 +35,16 @@ impl Base {
         self.emit(Inst::Nop);
         pc
     }
+
+    pub fn extract_code(&mut self) -> Vec<Inst> {
+        self.code.drain(..).collect()
+    }
 }
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct Extended {
     locals: Locals,
     inner: Box<Context>,
-}
-
-impl Extended {
-    pub fn new(inner: Context) -> Self {
-        Extended {
-            locals: Locals::new(),
-            inner: inner.into(),
-        }
-    }
 }
 
 #[derive(Clone, PartialEq, Debug)]
@@ -71,6 +66,10 @@ impl From<Extended> for Context {
 }
 
 impl Context {
+    pub fn new() -> Self {
+        Base::new().into()
+    }
+
     pub fn extend(self) -> Self {
         Context::Extended(Extended {
             locals: self.locals().clone(),

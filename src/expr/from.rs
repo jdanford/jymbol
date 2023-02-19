@@ -1,4 +1,4 @@
-use crate::{try_checked, Expr, Result, ResultIterator, Symbol, Value};
+use crate::{try_as_array, Expr, Result, ResultIterator, Symbol, Value};
 
 impl Expr {
     #[must_use]
@@ -6,8 +6,18 @@ impl Expr {
         Expr::Var(sym)
     }
 
-    pub fn value(value: &Value) -> Self {
-        Expr::Value(value.clone())
+    pub fn value(value: &Value) -> Result<Self> {
+        match value {
+            Value::Compound(cons) if cons.is_cons() => {
+                let values = value
+                    .clone()
+                    .into_iter()
+                    .map(|value| Expr::value(&value?))
+                    .try_collect()?;
+                Ok(Expr::List(values))
+            }
+            _ => Ok(Expr::Value(value.clone())),
+        }
     }
 
     pub fn fn_(params: Vec<Symbol>, body: Expr) -> Self {
@@ -49,10 +59,10 @@ impl Expr {
                 Expr::try_from_application(&fn_value, &values)
             }
             Value::Compound(quote) if quote.is_quote() => {
-                let [value] = try_checked(&quote.values)?;
-                Ok(Expr::value(value))
+                let [value] = try_as_array(&quote.values)?;
+                Expr::value(value)
             }
-            _ => Ok(Expr::value(value)),
+            _ => Expr::value(value),
         }
     }
 
@@ -76,7 +86,7 @@ impl Expr {
     }
 
     fn try_from_fn(values: &[Value]) -> Result<Expr> {
-        let [params_list, body_value] = try_checked(values)?;
+        let [params_list, body_value] = try_as_array(values)?;
         let params = params_list
             .clone()
             .into_iter()
@@ -87,7 +97,7 @@ impl Expr {
     }
 
     fn try_from_if(values: &[Value]) -> Result<Expr> {
-        let [cond_value, then_value, else_value] = try_checked(values)?;
+        let [cond_value, then_value, else_value] = try_as_array(values)?;
         let cond_expr = cond_value.try_into()?;
         let then_expr = then_value.try_into()?;
         let else_expr = else_value.try_into()?;
@@ -95,7 +105,7 @@ impl Expr {
     }
 
     fn try_from_let(values: &[Value]) -> Result<Expr> {
-        let [var_value, value, body_value] = try_checked(values)?;
+        let [var_value, value, body_value] = try_as_array(values)?;
         let var = var_value.clone().try_into()?;
         let value_expr = value.try_into()?;
         let body = body_value.try_into()?;

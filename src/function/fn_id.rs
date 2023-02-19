@@ -4,7 +4,6 @@ use gc::{unsafe_empty_trace, Finalize, Trace};
 use once_cell::sync::Lazy;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Finalize)]
-#[allow(clippy::module_name_repetitions)]
 pub struct FnId(NonZeroU32);
 
 unsafe impl Trace for FnId {

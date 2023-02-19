@@ -6,6 +6,7 @@ use crate::{Symbol, Value};
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
 pub enum Expr {
     Var(Symbol),
+    // TODO: replace with more specific variants
     Value(Value),
     List(Vec<Expr>),
     Fn {

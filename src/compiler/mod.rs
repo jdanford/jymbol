@@ -1,4 +1,4 @@
-mod context;
+pub mod context;
 mod locals;
 
 use crate::expr::vars;
@@ -20,11 +20,14 @@ impl<'a> Compiler<'a> {
         }
     }
 
-    fn lookup(&self, sym: Symbol) -> Result<(u16, u16)> {
+    fn lookup(&self, context: &Context, sym: Symbol) -> Result<(u16, u16)> {
+        if let Some(index) = context.locals().get_index(sym) {
+            return Ok((0, index));
+        }
+
         for (i, context) in self.contexts.iter().rev().enumerate() {
             if let Some(index) = context.locals().get_index(sym) {
-                let frame_index =
-                    u16::try_from(i).map_err(|_| "frame index out of range".to_string())?;
+                let frame_index = u16::try_from(i + 1).expect("frame index out of range");
                 return Ok((frame_index, index));
             }
         }
@@ -32,14 +35,14 @@ impl<'a> Compiler<'a> {
         Err(format!("`{sym}` is not defined"))
     }
 
-    fn compile(&mut self, mut context: Context, expr: &Expr) -> Result<Context> {
+    pub fn compile(&mut self, mut context: Context, expr: &Expr) -> Result<Context> {
         match expr {
             Expr::Value(value) => {
                 context.emit(Inst::Value(value.clone()));
                 Ok(context)
             }
             &Expr::Var(sym) => {
-                let (frame_index, index) = self.lookup(sym)?;
+                let (frame_index, index) = self.lookup(&context, sym)?;
                 context.emit(Inst::Get(frame_index, index));
                 Ok(context)
             }
@@ -74,23 +77,32 @@ impl<'a> Compiler<'a> {
             context = self.compile(context, &Expr::var(var))?;
         }
 
+        self.contexts.push(context);
+
+        let mut new_context = Context::new();
+        new_context.locals_mut().declare_all(params)?;
+        new_context.locals_mut().declare_all(&closure_vars)?;
+
         let closure_type = ClosureType {
             arity: params.len(),
             local_params: params.to_vec(),
             captured_params: closure_vars.iter().copied().collect(),
             body: body.clone(),
         };
-        let fn_id = self.vm.closure_id(&closure_type);
-        let closure_value_count = u8::try_from(closure_vars.len())
-            .map_err(|_| "closure var count is out of range".to_string())?;
-        context.emit(Inst::Closure(fn_id, closure_value_count));
 
-        let mut new_context = context.extend();
-        new_context
-            .locals_mut()
-            .declare_all(params.iter().copied())?;
-        new_context.locals_mut().declare_all(closure_vars)?;
-        Ok(new_context)
+        let fn_id = if let Some(fn_id) = self.vm.id_for_closure_type(&closure_type) {
+            fn_id
+        } else {
+            new_context = self.compile(new_context, body)?;
+            let code = new_context.extract_code();
+            self.vm.register_closure(&closure_type, code)
+        };
+
+        let closure_value_count =
+            u8::try_from(closure_vars.len()).expect("closure var count is out of range");
+        new_context.emit(Inst::Closure(fn_id, closure_value_count));
+
+        Ok(self.contexts.pop().unwrap())
     }
 
     fn compile_call(&mut self, mut context: Context, fn_: &Expr, args: &[Expr]) -> Result<Context> {
@@ -100,7 +112,7 @@ impl<'a> Compiler<'a> {
 
         context = self.compile(context, fn_)?;
 
-        let arity = u8::try_from(args.len()).map_err(|_| "arity is out of range".to_string())?;
+        let arity = u8::try_from(args.len()).expect("arity is out of range");
         context.emit(Inst::Call(arity));
         Ok(context)
     }

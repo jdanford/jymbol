@@ -1,24 +1,27 @@
-use crate::{parser, Env, Result, Symbol, Value, VM};
+use im::HashMap;
+
+use crate::{parser, Expr, Result, Symbol, Value, VM};
 
 pub struct Module<'a> {
     pub vm: &'a mut VM,
-    pub env: Env,
+    pub map: HashMap<Symbol, Value>,
 }
 
 impl<'a> Module<'a> {
     pub fn new(vm: &'a mut VM) -> Self {
         Module {
             vm,
-            env: Env::new(),
+            map: HashMap::new(),
         }
     }
 
     pub fn set<S: Into<Symbol>>(&mut self, s: S, value: Value) {
-        self.env.insert(s.into(), value);
+        self.map.insert(s.into(), value);
     }
 
-    pub fn eval(&mut self, _value: &Value) -> Result<Value> {
-        Err("not implemented".to_string())
+    pub fn eval(&mut self, value: &Value) -> Result<Value> {
+        let expr = Expr::try_from(value)?;
+        self.vm.eval(&expr)
     }
 
     pub fn eval_str<S: AsRef<str>>(&mut self, s: S) -> Result<Value> {

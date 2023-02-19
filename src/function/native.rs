@@ -27,9 +27,9 @@ pub struct Native {
 }
 
 impl Native {
-    pub fn new<A: Into<Arity>>(function: RawFn, arity: A) -> Native {
+    pub fn new<A: Into<Arity>>(id: FnId, function: RawFn, arity: A) -> Native {
         Native {
-            id: FnId::next(),
+            id,
             arity: arity.into(),
             function: function.into(),
         }

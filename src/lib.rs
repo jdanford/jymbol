@@ -5,9 +5,8 @@
 )]
 
 mod arity;
-mod checked;
+mod array;
 mod compiler;
-mod env;
 mod error;
 mod expr;
 mod function;
@@ -19,8 +18,7 @@ mod value;
 mod vm;
 
 pub use arity::Arity;
-pub use checked::try_checked;
-pub use env::Env;
+pub use array::try_as_array;
 pub use error::{Error, Result};
 pub use expr::Expr;
 pub use function::FnId;
