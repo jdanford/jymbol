@@ -1,5 +1,3 @@
-// adapted from `symbol_table/src/global.rs`
-
 use std::{
     fmt::{self, Debug, Display, Formatter},
     num::NonZeroU32,

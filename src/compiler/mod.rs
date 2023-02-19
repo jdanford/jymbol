@@ -94,6 +94,8 @@ impl<'a> Compiler<'a> {
             fn_id
         } else {
             new_context = self.compile(new_context, body)?;
+            new_context.emit(Inst::Ret);
+
             let code = new_context.extract_code();
             self.vm.register_closure(&closure_type, code)
         };

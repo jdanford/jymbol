@@ -7,6 +7,7 @@
 mod arity;
 mod array;
 mod compiler;
+mod env;
 mod error;
 mod expr;
 mod function;
@@ -19,6 +20,7 @@ mod vm;
 
 pub use arity::Arity;
 pub use array::try_as_array;
+pub use env::Env;
 pub use error::{Error, Result};
 pub use expr::Expr;
 pub use function::FnId;

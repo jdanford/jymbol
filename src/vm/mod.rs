@@ -10,7 +10,7 @@ use im::HashMap;
 use crate::{
     compiler::{context::Context, Compiler},
     function::{self, RawFn},
-    Arity, Expr, FnId, Result, Symbol, Value,
+    Arity, Env, Expr, FnId, Result, Symbol, Value,
 };
 
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
@@ -86,10 +86,16 @@ impl VM {
         self.values.split_off(i)
     }
 
-    pub fn eval(&mut self, expr: &Expr) -> Result<Value> {
+    pub fn eval(&mut self, env: &Env, expr: &Expr) -> Result<Value> {
         let mut context = Context::new();
+        let locals = context.locals_mut();
+        for (&var, _) in env.iter() {
+            locals.declare(var)?;
+        }
+
         let mut compiler = Compiler::new(self);
         context = compiler.compile(context, expr)?;
+        context.emit(Inst::Ret);
         let code = context.extract_code();
         let fn_id = FnId::next();
         let function = function::Compiled {
@@ -99,7 +105,8 @@ impl VM {
         };
         self.compiled_functions.insert(fn_id, function);
 
-        let frame = Frame::compiled(fn_id, vec![]);
+        let local_values = env.values().cloned().collect();
+        let frame = Frame::compiled(fn_id, local_values);
         self.frames.push(frame);
         self.run()?;
 
@@ -127,10 +134,10 @@ impl VM {
         Ok(())
     }
 
-    fn step(&mut self, mut frame: frame::Compiled) -> Result<Option<Frame>> {
-        let func = self.compiled_functions.get(&frame.fn_id).unwrap();
-        let inst = &func.code[frame.pc as usize];
-        frame.pc += 1;
+    fn step(&mut self, mut current_frame: frame::Compiled) -> Result<Option<Frame>> {
+        let func = self.compiled_functions.get(&current_frame.fn_id).unwrap();
+        let inst = &func.code[current_frame.pc as usize];
+        current_frame.pc += 1;
 
         match inst {
             &Inst::Nop => {}
@@ -165,30 +172,36 @@ impl VM {
                 self.values.push(z.into());
             }
             &Inst::Get(frame_index, index) => {
-                let frame = self.relative_frame(frame_index);
-                let locals = frame.locals();
+                let locals = if frame_index == 0 {
+                    &current_frame.locals
+                } else {
+                    self.relative_frame(frame_index - 1).locals()
+                };
                 let value = locals[index as usize].clone();
                 self.values.push(value);
             }
             &Inst::Set(frame_index, index) => {
                 let value = self.pop_value();
-                let frame = self.relative_frame(frame_index);
-                let locals = frame.locals_mut();
+                let locals = if frame_index == 0 {
+                    &mut current_frame.locals
+                } else {
+                    self.relative_frame(frame_index - 1).locals_mut()
+                };
                 locals[index as usize] = value;
             }
             &Inst::Jump(jmp_pc) => {
-                frame.pc = jmp_pc;
+                current_frame.pc = jmp_pc;
             }
             &Inst::JumpIf(jmp_pc) => {
                 let value = self.pop_value();
                 if value.is_truthy() {
-                    frame.pc = jmp_pc;
+                    current_frame.pc = jmp_pc;
                 }
             }
             &Inst::JumpIfNot(jmp_pc) => {
                 let value = self.pop_value();
                 if !value.is_truthy() {
-                    frame.pc = jmp_pc;
+                    current_frame.pc = jmp_pc;
                 }
             }
             &Inst::Call(arity) => {
@@ -198,12 +211,12 @@ impl VM {
                     Value::Closure(ref closure) => {
                         locals.extend(closure.values.clone());
                         let new_frame = Frame::compiled(closure.fn_id, locals);
-                        self.frames.push(frame.into());
+                        self.frames.push(current_frame.into());
                         return Ok(Some(new_frame));
                     }
                     Value::NativeFunction(fn_id) => {
                         let new_frame = Frame::native(fn_id, locals);
-                        self.frames.push(frame.into());
+                        self.frames.push(current_frame.into());
                         return Ok(Some(new_frame));
                     }
                     _ => {
@@ -216,7 +229,7 @@ impl VM {
             }
         }
 
-        Ok(Some(frame.into()))
+        Ok(Some(current_frame.into()))
     }
 }
 
