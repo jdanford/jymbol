@@ -78,12 +78,10 @@ fn raw_expr() -> impl Parser<char, Value, Error = Simple<char>> {
     })
 }
 
-#[must_use]
 pub fn value() -> impl Parser<char, Value, Error = Simple<char>> {
     raw_expr().then_ignore(end())
 }
 
-#[must_use]
 pub fn values() -> impl Parser<char, Vec<Value>, Error = Simple<char>> {
     raw_expr().repeated().collect::<Vec<_>>().then_ignore(end())
 }

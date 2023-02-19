@@ -1,6 +1,6 @@
-use crate::{FnId, Symbol, Value};
+pub mod op;
 
-use super::op;
+use crate::{FnId, Symbol, Value};
 
 #[derive(Clone, PartialEq, Debug)]
 pub enum Inst {

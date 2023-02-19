@@ -5,25 +5,27 @@
 )]
 
 mod arity;
-mod array;
 mod compiler;
+mod convert;
 mod env;
 mod error;
 mod expr;
 mod function;
+mod instruction;
 mod iterator;
 mod module;
-pub mod parser;
-pub mod symbol;
+mod parser;
+mod symbol;
 mod value;
 mod vm;
 
 pub use arity::Arity;
-pub use array::try_as_array;
+pub use convert::try_as_array;
 pub use env::Env;
 pub use error::{Error, Result};
 pub use expr::Expr;
 pub use function::FnId;
+pub use instruction::Inst;
 pub use iterator::ResultIterator;
 pub use module::Module;
 pub use symbol::Symbol;

@@ -5,18 +5,6 @@ use std::{
 
 use crate::{Arity, FnId, Result, Value};
 
-pub trait Args {
-    fn checked<const N: usize>(&self) -> Result<&[Value; N]>;
-}
-
-impl Args for [Value] {
-    #[allow(clippy::missing_panics_doc)]
-    fn checked<const N: usize>(&self) -> Result<&[Value; N]> {
-        Arity::from(N).check(self.len())?;
-        Ok(self.try_into().unwrap())
-    }
-}
-
 pub type RawFn = fn(&[Value]) -> Result<Value>;
 
 #[derive(Clone)]
@@ -27,7 +15,7 @@ pub struct Native {
 }
 
 impl Native {
-    pub fn new<A: Into<Arity>>(id: FnId, function: RawFn, arity: A) -> Native {
+    pub fn new<A: Into<Arity>>(id: FnId, arity: A, function: RawFn) -> Native {
         Native {
             id,
             arity: arity.into(),

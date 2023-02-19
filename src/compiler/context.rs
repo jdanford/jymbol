@@ -1,43 +1,19 @@
 use std::ops::{Deref, DerefMut};
 
-use crate::vm::Inst;
-
-use super::locals::Locals;
+use super::{code::Code, locals::Locals};
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct Base {
     locals: Locals,
-    code: Vec<Inst>,
+    code: Code,
 }
 
 impl Base {
     pub fn new() -> Self {
         Base {
             locals: Locals::new(),
-            code: Vec::new(),
+            code: Code::new(),
         }
-    }
-
-    pub fn pc(&self) -> u32 {
-        u32::try_from(self.code.len()).expect("pc is out of range")
-    }
-
-    pub fn emit(&mut self, inst: Inst) {
-        self.code.push(inst);
-    }
-
-    pub fn update(&mut self, pc: u32, inst: Inst) {
-        self.code[pc as usize] = inst;
-    }
-
-    pub fn bookmark(&mut self) -> u32 {
-        let pc = self.pc();
-        self.emit(Inst::Nop);
-        pc
-    }
-
-    pub fn extract_code(&mut self) -> Vec<Inst> {
-        self.code.drain(..).collect()
     }
 }
 
@@ -89,6 +65,14 @@ impl Context {
             Context::Base(context) => &mut context.locals,
             Context::Extended(context) => &mut context.locals,
         }
+    }
+
+    pub fn code(&self) -> &Code {
+        &self.base().code
+    }
+
+    pub fn code_mut(&mut self) -> &mut Code {
+        &mut self.base_mut().code
     }
 
     fn base(&self) -> &Base {

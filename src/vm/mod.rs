@@ -1,16 +1,13 @@
 mod frame;
-mod instruction;
-mod op;
 
 pub use frame::Frame;
-pub use instruction::Inst;
 
 use im::HashMap;
 
 use crate::{
     compiler::{context::Context, Compiler},
     function::{self, RawFn},
-    Arity, Env, Expr, FnId, Result, Symbol, Value,
+    Arity, Env, Expr, FnId, Inst, Result, Symbol, Value,
 };
 
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
@@ -41,7 +38,6 @@ impl VM {
         }
     }
 
-    #[must_use]
     fn relative_frame(&mut self, frame_index: u16) -> &mut Frame {
         let max_index = self.frames.len() - 1;
         let i = max_index - frame_index as usize;
@@ -53,25 +49,21 @@ impl VM {
     }
 
     pub fn register_closure(&mut self, closure_type: &ClosureType, code: Vec<Inst>) -> FnId {
-        if let Some(&id) = self.closure_ids.get(closure_type) {
-            id
-        } else {
-            let id = FnId::next();
-            self.closure_ids.insert(closure_type.clone(), id);
-
-            let compiled_function = function::Compiled {
-                arity: Arity::Exactly(closure_type.arity),
-                fn_id: id,
-                code,
-            };
-            self.compiled_functions.insert(id, compiled_function);
-            id
+        if let Some(id) = self.id_for_closure_type(closure_type) {
+            return id;
         }
+
+        let id = FnId::next();
+        self.closure_ids.insert(closure_type.clone(), id);
+
+        let compiled_function = function::Compiled::new(id, closure_type.arity, code);
+        self.compiled_functions.insert(id, compiled_function);
+        id
     }
 
     pub fn register_native<A: Into<Arity>>(&mut self, function: RawFn, arity: A) -> FnId {
         let id = FnId::next();
-        let fn_ = function::Native::new(id, function, arity);
+        let fn_ = function::Native::new(id, arity, function);
         self.native_functions.insert(id, fn_);
         id
     }
@@ -95,14 +87,10 @@ impl VM {
 
         let mut compiler = Compiler::new(self);
         context = compiler.compile(context, expr)?;
-        context.emit(Inst::Ret);
-        let code = context.extract_code();
+        context.code_mut().emit(Inst::Ret);
+        let code = context.code_mut().extract();
         let fn_id = FnId::next();
-        let function = function::Compiled {
-            arity: 0.into(),
-            code,
-            fn_id,
-        };
+        let function = function::Compiled::new(fn_id, 0, code);
         self.compiled_functions.insert(fn_id, function);
 
         let local_values = env.values().cloned().collect();
@@ -211,13 +199,17 @@ impl VM {
             }
             &Inst::Call(arity) => {
                 let func = self.pop_value();
-                let mut locals = self.pop_values(arity as usize);
+                let mut locals = Vec::new();
                 let new_frame = match func {
                     Value::Closure(ref closure) => {
                         locals.extend(closure.values.clone());
+                        locals.extend(self.pop_values(arity as usize));
                         Ok(Frame::compiled(closure.fn_id, locals))
                     }
-                    Value::NativeFunction(fn_id) => Ok(Frame::native(fn_id, locals)),
+                    Value::NativeFunction(fn_id) => {
+                        locals.extend(self.pop_values(arity as usize));
+                        Ok(Frame::native(fn_id, locals))
+                    }
                     _ => Err(format!("can't call {func}")),
                 }?;
 
