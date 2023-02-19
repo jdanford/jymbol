@@ -17,7 +17,7 @@ fn main() -> Result<(), String> {
     module.set(*symbol::FALSE, (*symbol::FALSE).into());
     module.set("list", list_fn);
 
-    let input = r#"(list nil false true 'abc 1 -2 3.1416 "hello world")"#;
+    let input = r#"'(nil false true 'abc 1 -2 3.1416 "hello world")"#;
     let unevaled_value = parser::parse(input, parser::value())?;
     let value = module.eval(&unevaled_value)?;
 

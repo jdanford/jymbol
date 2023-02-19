@@ -3,7 +3,7 @@ mod locals;
 
 use crate::expr::vars;
 use crate::vm::{ClosureType, Inst};
-use crate::{symbol, Expr, Result, Symbol, Value, VM};
+use crate::{Expr, Result, Symbol, VM};
 
 use self::context::Context;
 
@@ -55,12 +55,12 @@ impl<'a> Compiler<'a> {
     }
 
     fn compile_list(&mut self, mut context: Context, exprs: &[Expr]) -> Result<Context> {
-        context.emit(Inst::Value(Value::nil()));
-
-        for expr in exprs.iter().rev() {
+        for expr in exprs.iter() {
             context = self.compile(context, expr)?;
-            context.emit(Inst::Compound(*symbol::CONS, 2));
         }
+
+        let value_count = u16::try_from(exprs.len()).expect("value count out of range");
+        context.emit(Inst::List(value_count));
 
         Ok(context)
     }
@@ -101,7 +101,7 @@ impl<'a> Compiler<'a> {
         };
 
         let closure_value_count =
-            u8::try_from(closure_vars.len()).expect("closure var count is out of range");
+            u16::try_from(closure_vars.len()).expect("closure var count is out of range");
         new_context.emit(Inst::Closure(fn_id, closure_value_count));
 
         Ok(self.contexts.pop().unwrap())
@@ -114,7 +114,7 @@ impl<'a> Compiler<'a> {
 
         context = self.compile(context, fn_)?;
 
-        let arity = u8::try_from(args.len()).expect("arity is out of range");
+        let arity = u16::try_from(args.len()).expect("arity is out of range");
         context.emit(Inst::Call(arity));
         Ok(context)
     }

@@ -23,7 +23,7 @@ impl Compound {
                 write!(f, " ")?;
             }
 
-            let value = result.map_err(|_| fmt::Error)?;
+            let value = result.unwrap();
             write!(f, "{value}")?;
         }
 
@@ -32,28 +32,28 @@ impl Compound {
     }
 
     fn fmt_quote(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        let [value] = self.as_array().map_err(|_| fmt::Error)?;
+        let [value] = self.as_array().unwrap();
         write!(f, "'")?;
         write!(f, "{value}")?;
         Ok(())
     }
 
     fn fmt_quasiquote(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        let [value] = self.as_array().map_err(|_| fmt::Error)?;
+        let [value] = self.as_array().unwrap();
         write!(f, "`")?;
         write!(f, "{value}")?;
         Ok(())
     }
 
     fn fmt_unquote(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        let [value] = self.as_array().map_err(|_| fmt::Error)?;
+        let [value] = self.as_array().unwrap();
         write!(f, ",")?;
         write!(f, "{value}")?;
         Ok(())
     }
 
     fn fmt_unquote_splicing(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        let [value] = self.as_array().map_err(|_| fmt::Error)?;
+        let [value] = self.as_array().unwrap();
         write!(f, ",@")?;
         write!(f, "{value}")?;
         Ok(())

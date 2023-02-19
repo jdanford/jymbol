@@ -147,6 +147,11 @@ impl VM {
             Inst::Value(value) => {
                 self.values.push(value.clone());
             }
+            &Inst::List(value_count) => {
+                let values = self.pop_values(value_count as usize);
+                let value = Value::list(values);
+                self.values.push(value);
+            }
             &Inst::Compound(type_, value_count) => {
                 let values = self.pop_values(value_count as usize);
                 let value = Value::compound(type_, values);
