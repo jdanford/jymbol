@@ -5,17 +5,16 @@ use crate::{Symbol, Value};
 
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
 pub enum Expr {
-    Var(Symbol),
-    // TODO: replace with more specific variants
     Value(Value),
+    Var(Symbol),
     List(Vec<Expr>),
-    Fn {
-        params: Vec<Symbol>,
-        body: Box<Expr>,
-    },
     Call {
         fn_: Box<Expr>,
         args: Vec<Expr>,
+    },
+    Fn {
+        params: Vec<Symbol>,
+        body: Box<Expr>,
     },
     Let {
         var: Symbol,

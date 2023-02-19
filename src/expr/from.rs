@@ -10,13 +10,19 @@ impl Expr {
         match value {
             Value::Compound(cons) if cons.is_cons() => {
                 let values = value
-                    .clone()
-                    .into_iter()
-                    .map(|value| Expr::value(&value?))
+                    .iter()
+                    .map(|value| Expr::value(value?))
                     .try_collect()?;
                 Ok(Expr::List(values))
             }
             _ => Ok(Expr::Value(value.clone())),
+        }
+    }
+
+    pub fn call(fn_: Expr, args: Vec<Expr>) -> Self {
+        Expr::Call {
+            fn_: fn_.into(),
+            args,
         }
     }
 
@@ -43,19 +49,16 @@ impl Expr {
         }
     }
 
-    pub fn call(fn_: Expr, args: Vec<Expr>) -> Self {
-        Expr::Call {
-            fn_: fn_.into(),
-            args,
-        }
-    }
-
     fn try_from_value(value: &Value) -> Result<Expr> {
         match value {
             &Value::Symbol(sym) => Ok(Expr::Var(sym)),
             Value::Compound(cons) if cons.is_cons() => {
                 let (fn_value, values_list) = cons.as_cons()?;
-                let values = values_list.into_iter().try_collect()?;
+                #[allow(clippy::redundant_closure_for_method_calls)]
+                let values = values_list
+                    .iter()
+                    .map(|value| value.cloned())
+                    .try_collect()?;
                 Expr::try_from_application(&fn_value, &values)
             }
             Value::Compound(quote) if quote.is_quote() => {
@@ -69,9 +72,9 @@ impl Expr {
     fn try_from_application(fn_value: &Value, values: &[Value]) -> Result<Expr> {
         match fn_value {
             Value::Symbol(sym) => match sym.as_str() {
-                "if" => Expr::try_from_if(values),
-                "let" => Expr::try_from_let(values),
                 "fn" => Expr::try_from_fn(values),
+                "let" => Expr::try_from_let(values),
+                "if" => Expr::try_from_if(values),
                 _ => Expr::try_from_call(fn_value, values),
             },
             Value::Closure(_) | Value::NativeFunction(_) => Expr::try_from_call(fn_value, values),
@@ -88,20 +91,11 @@ impl Expr {
     fn try_from_fn(values: &[Value]) -> Result<Expr> {
         let [params_list, body_value] = try_as_array(values)?;
         let params = params_list
-            .clone()
-            .into_iter()
-            .map(|value| value?.try_into())
+            .iter()
+            .map(|value| value.cloned()?.try_into())
             .try_collect()?;
         let body = body_value.try_into()?;
         Ok(Expr::fn_(params, body))
-    }
-
-    fn try_from_if(values: &[Value]) -> Result<Expr> {
-        let [cond_value, then_value, else_value] = try_as_array(values)?;
-        let cond_expr = cond_value.try_into()?;
-        let then_expr = then_value.try_into()?;
-        let else_expr = else_value.try_into()?;
-        Ok(Expr::if_(cond_expr, then_expr, else_expr))
     }
 
     fn try_from_let(values: &[Value]) -> Result<Expr> {
@@ -110,6 +104,14 @@ impl Expr {
         let value_expr = value.try_into()?;
         let body = body_value.try_into()?;
         Ok(Expr::let_(var, value_expr, body))
+    }
+
+    fn try_from_if(values: &[Value]) -> Result<Expr> {
+        let [cond_value, then_value, else_value] = try_as_array(values)?;
+        let cond_expr = cond_value.try_into()?;
+        let then_expr = then_value.try_into()?;
+        let else_expr = else_value.try_into()?;
+        Ok(Expr::if_(cond_expr, then_expr, else_expr))
     }
 }
 

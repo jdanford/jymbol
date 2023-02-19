@@ -16,6 +16,18 @@ pub enum Frame {
     Native(Native),
 }
 
+impl From<Compiled> for Frame {
+    fn from(frame: Compiled) -> Self {
+        Frame::Compiled(frame)
+    }
+}
+
+impl From<Native> for Frame {
+    fn from(frame: Native) -> Self {
+        Frame::Native(frame)
+    }
+}
+
 impl Frame {
     pub fn compiled(fn_id: FnId, locals: Vec<Value>) -> Self {
         Frame::Compiled(Compiled {
@@ -40,17 +52,5 @@ impl Frame {
             Frame::Compiled(compiled_frame) => &mut compiled_frame.locals,
             Frame::Native(native_frame) => &mut native_frame.locals,
         }
-    }
-}
-
-impl From<Compiled> for Frame {
-    fn from(frame: Compiled) -> Self {
-        Frame::Compiled(frame)
-    }
-}
-
-impl From<Native> for Frame {
-    fn from(frame: Native) -> Self {
-        Frame::Native(frame)
     }
 }

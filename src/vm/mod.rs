@@ -212,22 +212,17 @@ impl VM {
             &Inst::Call(arity) => {
                 let func = self.pop_value();
                 let mut locals = self.pop_values(arity as usize);
-                match func {
+                let new_frame = match func {
                     Value::Closure(ref closure) => {
                         locals.extend(closure.values.clone());
-                        let new_frame = Frame::compiled(closure.fn_id, locals);
-                        self.frames.push(current_frame.into());
-                        return Ok(Some(new_frame));
+                        Ok(Frame::compiled(closure.fn_id, locals))
                     }
-                    Value::NativeFunction(fn_id) => {
-                        let new_frame = Frame::native(fn_id, locals);
-                        self.frames.push(current_frame.into());
-                        return Ok(Some(new_frame));
-                    }
-                    _ => {
-                        return Err(format!("can't call {func}"));
-                    }
-                }
+                    Value::NativeFunction(fn_id) => Ok(Frame::native(fn_id, locals)),
+                    _ => Err(format!("can't call {func}")),
+                }?;
+
+                self.frames.push(current_frame.into());
+                return Ok(Some(new_frame));
             }
             &Inst::Ret => {
                 return Ok(None);

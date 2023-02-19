@@ -17,12 +17,12 @@ impl Expr {
         match self {
             &Expr::Var(var) => single(var),
             Expr::List(exprs) => exprs.iter().map(Expr::free_vars).sum(),
+            Expr::Call { args, .. } => args.iter().map(Expr::free_vars).sum(),
             Expr::Fn { params, body } => {
                 let body_vars = body.free_vars();
                 let bound_vars = list(params);
                 body_vars.difference(bound_vars)
             }
-            Expr::Call { fn_: _, args } => args.iter().map(Expr::free_vars).sum(),
             Expr::Let { var, value, body } => {
                 let vars = body.free_vars() + value.free_vars();
                 let bound_vars = single(*var);

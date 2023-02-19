@@ -3,7 +3,7 @@ mod locals;
 
 use crate::expr::vars;
 use crate::vm::{ClosureType, Inst};
-use crate::{Expr, Result, Symbol, VM};
+use crate::{Expr, FnId, Result, Symbol, VM};
 
 use self::context::Context;
 
@@ -47,8 +47,8 @@ impl<'a> Compiler<'a> {
                 Ok(context)
             }
             Expr::List(exprs) => self.compile_list(context, exprs),
-            Expr::Fn { params, body } => self.compile_fn(context, params, body),
             Expr::Call { fn_, args } => self.compile_call(context, fn_, args),
+            Expr::Fn { params, body } => self.compile_fn(context, params, body),
             Expr::Let { var, value, body } => self.compile_let(context, *var, value, body),
             Expr::If { cond, then, else_ } => self.compile_if(context, cond, then, else_),
         }
@@ -62,6 +62,18 @@ impl<'a> Compiler<'a> {
         let value_count = u16::try_from(exprs.len()).expect("value count out of range");
         context.emit(Inst::List(value_count));
 
+        Ok(context)
+    }
+
+    fn compile_call(&mut self, mut context: Context, fn_: &Expr, args: &[Expr]) -> Result<Context> {
+        for arg in args.iter() {
+            context = self.compile(context, arg)?;
+        }
+
+        context = self.compile(context, fn_)?;
+
+        let arity = u16::try_from(args.len()).expect("arity is out of range");
+        context.emit(Inst::Call(arity));
         Ok(context)
     }
 
@@ -93,11 +105,10 @@ impl<'a> Compiler<'a> {
         let fn_id = if let Some(fn_id) = self.vm.id_for_closure_type(&closure_type) {
             fn_id
         } else {
-            new_context = self.compile(new_context, body)?;
-            new_context.emit(Inst::Ret);
-
-            let code = new_context.extract_code();
-            self.vm.register_closure(&closure_type, code)
+            let (new_new_context, fn_id) =
+                self.compile_and_register_closure(new_context, &closure_type, body)?;
+            new_context = new_new_context; // lol
+            fn_id
         };
 
         let closure_value_count =
@@ -107,16 +118,18 @@ impl<'a> Compiler<'a> {
         Ok(self.contexts.pop().unwrap())
     }
 
-    fn compile_call(&mut self, mut context: Context, fn_: &Expr, args: &[Expr]) -> Result<Context> {
-        for arg in args.iter() {
-            context = self.compile(context, arg)?;
-        }
+    fn compile_and_register_closure(
+        &mut self,
+        mut context: Context,
+        closure_type: &ClosureType,
+        body: &Expr,
+    ) -> Result<(Context, FnId)> {
+        context = self.compile(context, body)?;
+        context.emit(Inst::Ret);
 
-        context = self.compile(context, fn_)?;
-
-        let arity = u16::try_from(args.len()).expect("arity is out of range");
-        context.emit(Inst::Call(arity));
-        Ok(context)
+        let code = context.extract_code();
+        let fn_id = self.vm.register_closure(closure_type, code);
+        Ok((context, fn_id))
     }
 
     fn compile_let(

@@ -38,12 +38,12 @@ impl Env {
     }
 
     #[must_use]
-    pub fn merge(self, other: Env) -> Env {
+    pub fn merge(self, other: Self) -> Self {
         let map = self.map.union(other.map);
         Env { map }
     }
 
-    pub fn merge_unique(self, other: Env) -> Result<Env> {
+    pub fn merge_unique(self, other: Self) -> Result<Self> {
         let intersection = self.map.clone().intersection(other.map.clone());
         if !intersection.is_empty() {
             let existing_vars = intersection.keys().collect::<Vec<_>>();
@@ -55,13 +55,13 @@ impl Env {
     }
 
     #[must_use]
-    pub fn set<S: Into<Symbol>>(&self, s: S, value: Value) -> Env {
+    pub fn set<S: Into<Symbol>>(&self, s: S, value: Value) -> Self {
         let map = self.map.update(s.into(), value);
         Env { map }
     }
 
     #[must_use]
-    pub fn set_all(&self, params: &[Symbol], values: &[Value]) -> Env {
+    pub fn set_all(&self, params: &[Symbol], values: &[Value]) -> Self {
         let mut env = self.clone();
         for (&param, value) in params.iter().zip(values) {
             env = env.set(param, value.clone());
