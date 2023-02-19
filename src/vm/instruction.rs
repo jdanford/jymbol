@@ -3,7 +3,7 @@ use crate::{FnId, Symbol, Value};
 use super::op;
 
 #[derive(Clone, PartialEq, Debug)]
-pub enum Instruction {
+pub enum Inst {
     Nop,
     Drop,
     Value(Value),
@@ -14,7 +14,8 @@ pub enum Instruction {
     Get(u16, u16),
     Set(u16, u16),
     Jump(u32),
-    Branch(u32, u32),
+    JumpIf(u32),
+    JumpIfNot(u32),
     Call(u8),
     Ret,
 }

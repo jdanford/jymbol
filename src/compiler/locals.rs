@@ -1,6 +1,6 @@
 use im::HashMap;
 
-use crate::{Result, Symbol};
+use crate::{Result, ResultIterator, Symbol};
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct Locals {
@@ -25,6 +25,10 @@ impl Locals {
         self.vars.push(var);
         self.indices.insert(var, index);
         Ok(index)
+    }
+
+    pub fn declare_all<I: IntoIterator<Item = Symbol>>(&mut self, vars: I) -> Result<Vec<u16>> {
+        vars.into_iter().map(|var| self.declare(var)).try_collect()
     }
 
     pub fn get_index(&self, var: Symbol) -> Option<u16> {

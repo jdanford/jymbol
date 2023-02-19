@@ -1,11 +1,13 @@
-use crate::vm::Instruction;
+use std::ops::{Deref, DerefMut};
+
+use crate::vm::Inst;
 
 use super::locals::Locals;
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct Base {
     locals: Locals,
-    code: Vec<Instruction>,
+    code: Vec<Inst>,
 }
 
 impl Base {
@@ -16,8 +18,22 @@ impl Base {
         }
     }
 
-    pub fn emit(&mut self, inst: Instruction) {
+    pub fn pc(&self) -> u32 {
+        u32::try_from(self.code.len()).expect("pc is out of range")
+    }
+
+    pub fn emit(&mut self, inst: Inst) {
         self.code.push(inst);
+    }
+
+    pub fn update(&mut self, pc: u32, inst: Inst) {
+        self.code[pc as usize] = inst;
+    }
+
+    pub fn bookmark(&mut self) -> u32 {
+        let pc = self.pc();
+        self.emit(Inst::Nop);
+        pc
     }
 }
 
@@ -76,7 +92,18 @@ impl Context {
         }
     }
 
-    fn base(&mut self) -> &mut Base {
+    fn base(&self) -> &Base {
+        let mut context = self;
+
+        loop {
+            match context {
+                Context::Extended(extended_context) => context = &extended_context.inner,
+                Context::Base(base_context) => return base_context,
+            }
+        }
+    }
+
+    fn base_mut(&mut self) -> &mut Base {
         let mut context = self;
 
         loop {
@@ -86,8 +113,18 @@ impl Context {
             }
         }
     }
+}
 
-    pub fn emit(&mut self, inst: Instruction) {
-        self.base().emit(inst);
+impl Deref for Context {
+    type Target = Base;
+
+    fn deref(&self) -> &Self::Target {
+        self.base()
+    }
+}
+
+impl DerefMut for Context {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.base_mut()
     }
 }

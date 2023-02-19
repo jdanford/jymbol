@@ -3,18 +3,18 @@ mod instruction;
 mod op;
 
 pub use frame::{CompiledFrame, Frame, NativeFrame};
-pub use instruction::Instruction;
+pub use instruction::Inst;
 
 use im::HashMap;
 
-use crate::{function, FnId, Result, Symbol, Value};
+use crate::{function, Expr, FnId, Result, Symbol, Value};
 
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
 pub struct ClosureType {
     pub arity: usize,
     pub local_params: Vec<Symbol>,
     pub captured_params: Vec<Symbol>,
-    pub body: Value,
+    pub body: Expr,
 }
 
 pub struct VM {
@@ -44,7 +44,7 @@ impl VM {
         &mut self.frames[i]
     }
 
-    fn closure_id(&mut self, closure_type: &ClosureType) -> FnId {
+    pub fn closure_id(&mut self, closure_type: &ClosureType) -> FnId {
         if let Some(&id) = self.closure_ids.get(closure_type) {
             id
         } else {
@@ -89,30 +89,30 @@ impl VM {
         frame.pc += 1;
 
         match inst {
-            &Instruction::Nop => {}
-            &Instruction::Drop => {
+            &Inst::Nop => {}
+            &Inst::Drop => {
                 self.values.pop();
             }
-            Instruction::Value(value) => {
+            Inst::Value(value) => {
                 self.values.push(value.clone());
             }
-            &Instruction::Compound(type_, value_count) => {
+            &Inst::Compound(type_, value_count) => {
                 let values = self.pop_values(value_count as usize);
                 let value = Value::compound(type_, values);
                 self.values.push(value);
             }
-            &Instruction::Closure(fn_id, value_count) => {
+            &Inst::Closure(fn_id, value_count) => {
                 let values = self.pop_values(value_count as usize);
                 let value = Value::closure(fn_id, values);
                 self.values.push(value);
             }
-            &Instruction::UnOp(op) => {
+            &Inst::UnOp(op) => {
                 let value = self.pop_value();
                 let x: f64 = value.try_into()?;
                 let y = op.apply(x);
                 self.values.push(y.into());
             }
-            &Instruction::BinOp(op) => {
+            &Inst::BinOp(op) => {
                 let value_y = self.pop_value();
                 let value_x = self.pop_value();
                 let x: f64 = value_x.try_into()?;
@@ -120,34 +120,40 @@ impl VM {
                 let z = op.apply(x, y);
                 self.values.push(z.into());
             }
-            &Instruction::Get(frame_index, index) => {
+            &Inst::Get(frame_index, index) => {
                 let frame = self.relative_frame(frame_index);
                 let locals = frame.locals();
                 let value = locals[index as usize].clone();
                 self.values.push(value);
             }
-            &Instruction::Set(frame_index, index) => {
+            &Inst::Set(frame_index, index) => {
                 let value = self.pop_value();
                 let frame = self.relative_frame(frame_index);
                 let locals = frame.locals();
                 locals[index as usize] = value;
             }
-            &Instruction::Jump(jmp_pc) => {
+            &Inst::Jump(jmp_pc) => {
                 frame.pc = jmp_pc;
             }
-            &Instruction::Branch(true_pc, false_pc) => {
+            &Inst::JumpIf(jmp_pc) => {
                 let value = self.pop_value();
                 if value.is_truthy() {
-                    frame.pc = true_pc;
-                } else {
-                    frame.pc = false_pc;
+                    frame.pc = jmp_pc;
                 }
             }
-            &Instruction::Call(arity) => {
+            &Inst::JumpIfNot(jmp_pc) => {
+                let value = self.pop_value();
+                if !value.is_truthy() {
+                    frame.pc = jmp_pc;
+                }
+            }
+            &Inst::Call(arity) => {
                 let func = self.pop_value();
-                let locals = self.pop_values(arity as usize);
+                let mut locals = self.pop_values(arity as usize);
                 match func {
                     Value::Closure(ref closure) => {
+                        locals.extend(closure.values.clone());
+
                         let new_frame = Frame::Compiled(CompiledFrame {
                             fn_id: closure.fn_id,
                             locals,
@@ -166,7 +172,7 @@ impl VM {
                     }
                 }
             }
-            &Instruction::Ret => {
+            &Inst::Ret => {
                 return Ok(None);
             }
         }

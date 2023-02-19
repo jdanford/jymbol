@@ -5,9 +5,11 @@
 )]
 
 mod arity;
+mod checked;
 mod compiler;
 mod env;
 mod error;
+mod expr;
 mod function;
 mod iterator;
 mod module;
@@ -17,8 +19,10 @@ mod value;
 mod vm;
 
 pub use arity::Arity;
+pub use checked::try_checked;
 pub use env::Env;
 pub use error::{Error, Result};
+pub use expr::Expr;
 pub use function::FnId;
 pub use iterator::ResultIterator;
 pub use module::Module;
