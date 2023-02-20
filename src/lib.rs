@@ -5,6 +5,7 @@
 )]
 
 mod arity;
+mod builtin;
 mod compiler;
 mod convert;
 mod env;

@@ -19,6 +19,7 @@ pub struct ClosureType {
     pub body: Expr,
 }
 
+#[derive(Debug)]
 pub struct VM {
     frames: Vec<Frame>,
     values: Vec<Value>,

@@ -24,9 +24,7 @@ fn raw_symbol() -> impl Parser<char, String, Error = Simple<char>> {
 fn raw_expr() -> impl Parser<char, Value, Error = Simple<char>> {
     recursive(|expr| {
         let symbol = raw_symbol().map(Value::symbol).labelled("symbol");
-
-        let number = float().map(Value::Number).labelled("number");
-
+        let number = float().map(Value::number).labelled("number");
         let string = string().map(Value::from).labelled("string");
 
         let quote = just('\'')
@@ -83,5 +81,5 @@ pub fn value() -> impl Parser<char, Value, Error = Simple<char>> {
 }
 
 pub fn values() -> impl Parser<char, Vec<Value>, Error = Simple<char>> {
-    raw_expr().repeated().collect::<Vec<_>>().then_ignore(end())
+    raw_expr().repeated().then_ignore(end())
 }

@@ -17,7 +17,7 @@ impl Expr {
         match self {
             &Expr::Var(var) => single(var),
             Expr::List(exprs) | Expr::Do(exprs) => exprs.iter().map(Expr::free_vars).sum(),
-            Expr::Call { args, .. } => args.iter().map(Expr::free_vars).sum(),
+            Expr::Call { fn_, args } => fn_.free_vars() + args.iter().map(Expr::free_vars).sum(),
             Expr::Fn { params, body } => {
                 let body_vars = body.free_vars();
                 let bound_vars = list(params);

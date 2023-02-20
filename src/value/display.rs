@@ -17,12 +17,11 @@ impl Compound {
         write!(f, "(")?;
 
         let list = Value::Compound(self.clone().into());
-        for (i, result) in list.iter().enumerate() {
+        for (i, value) in list.iter().enumerate() {
             if i > 0 {
                 write!(f, " ")?;
             }
 
-            let value = result.unwrap();
             write!(f, "{value}")?;
         }
 

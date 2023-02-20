@@ -21,6 +21,11 @@ impl From<String> for Value {
 }
 
 impl Value {
+    #[must_use]
+    pub fn number(num: f64) -> Self {
+        Value::Number(num)
+    }
+
     pub fn symbol<S: AsRef<str>>(s: S) -> Self {
         Symbol::new(s).into()
     }

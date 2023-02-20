@@ -10,6 +10,7 @@ use crate::{
 
 use self::context::Context;
 
+#[derive(Debug)]
 pub struct Compiler<'a> {
     pub vm: &'a mut VM,
     pub contexts: Vec<Context>,

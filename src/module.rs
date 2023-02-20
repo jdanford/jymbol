@@ -1,5 +1,6 @@
-use crate::{parser, Env, Expr, Result, Symbol, Value, VM};
+use crate::{builtin, parser, Env, Expr, Result, Symbol, Value, VM};
 
+#[derive(Debug)]
 pub struct Module<'a> {
     pub vm: &'a mut VM,
     pub env: Env,
@@ -9,7 +10,7 @@ impl<'a> Module<'a> {
     pub fn new(vm: &'a mut VM) -> Self {
         Module {
             vm,
-            env: Env::new(),
+            env: builtin::env(),
         }
     }
 
