@@ -50,7 +50,7 @@ impl Frame {
             Frame::Native(native_frame) => &native_frame.locals,
         }
     }
-    pub fn locals_mut(&mut self) -> &mut [Value] {
+    pub fn locals_mut(&mut self) -> &mut Vec<Value> {
         match self {
             Frame::Compiled(compiled_frame) => &mut compiled_frame.locals,
             Frame::Native(native_frame) => &mut native_frame.locals,

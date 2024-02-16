@@ -1,4 +1,4 @@
-use crate::{builtin, parser, Env, Expr, Result, Symbol, Value, VM};
+use crate::{builtin, function::RawFn, parser, Arity, Env, Expr, Result, Symbol, Value, VM};
 
 #[derive(Debug)]
 pub struct Module<'a> {
@@ -8,14 +8,22 @@ pub struct Module<'a> {
 
 impl<'a> Module<'a> {
     pub fn new(vm: &'a mut VM) -> Self {
-        Module {
+        let mut module = Module {
             vm,
-            env: builtin::env(),
-        }
+            env: Env::new(),
+        };
+
+        builtin::define_all(&mut module);
+        module
     }
 
     pub fn set<S: Into<Symbol>>(&mut self, s: S, value: Value) {
         self.env.insert(s.into(), value);
+    }
+
+    pub fn set_native<S: Into<Symbol>, A: Into<Arity>>(&mut self, s: S, function: RawFn, arity: A) {
+        let fn_id = self.vm.register_native(function, arity);
+        self.set(s, Value::NativeFunction(fn_id));
     }
 
     pub fn eval(&mut self, value: &Value) -> Result<Value> {

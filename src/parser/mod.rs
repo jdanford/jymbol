@@ -2,7 +2,7 @@ mod primitive;
 mod value;
 
 use chumsky::{prelude::Simple, Parser};
-pub use value::{value, values};
+pub use value::value;
 
 use crate::Result;
 

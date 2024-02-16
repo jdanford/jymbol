@@ -1,29 +1,37 @@
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+use std::{cmp, ops};
+
+use crate::{Result, Value};
+
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub enum Unary {
     Abs,
     Neg,
     Sqrt,
     Trunc,
+    Fract,
     Round,
     Floor,
     Ceil,
+    Not,
 }
 
 impl Unary {
-    pub fn apply(self, x: f64) -> f64 {
+    pub fn apply(self, value: &Value) -> Result<Value> {
         match self {
-            Unary::Abs => x.abs(),
-            Unary::Neg => -x,
-            Unary::Sqrt => x.sqrt(),
-            Unary::Trunc => x.trunc(),
-            Unary::Round => x.round(),
-            Unary::Floor => x.floor(),
-            Unary::Ceil => x.ceil(),
+            Unary::Abs => unary_float_op(value, f64::abs),
+            Unary::Neg => unary_float_op(value, ops::Neg::neg),
+            Unary::Sqrt => unary_float_op(value, f64::sqrt),
+            Unary::Trunc => unary_float_op(value, f64::trunc),
+            Unary::Fract => unary_float_op(value, f64::fract),
+            Unary::Round => unary_float_op(value, f64::round),
+            Unary::Floor => unary_float_op(value, f64::floor),
+            Unary::Ceil => unary_float_op(value, f64::ceil),
+            Unary::Not => unary_int_op(value, ops::Not::not),
         }
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub enum Binary {
     Add,
     Sub,
@@ -31,11 +39,11 @@ pub enum Binary {
     Div,
     Mod,
     Pow,
+    Shl,
+    Shr,
     And,
     Or,
     Xor,
-    Shl,
-    Shr,
     Eq,
     Ne,
     Lt,
@@ -44,40 +52,60 @@ pub enum Binary {
     Ge,
 }
 
-fn wrap_bool(b: bool) -> f64 {
-    if b {
-        1.0
-    } else {
-        0.0
-    }
-}
-
-#[allow(clippy::cast_precision_loss)]
-fn wrap_int(i: i64) -> f64 {
-    i as f64
-}
-
 impl Binary {
     #[allow(clippy::cast_possible_truncation, clippy::float_cmp)]
-    pub fn apply(self, x: f64, y: f64) -> f64 {
+    pub fn apply(self, a: &Value, b: &Value) -> Result<Value> {
         match self {
-            Binary::Add => x + y,
-            Binary::Sub => x - y,
-            Binary::Mul => x * y,
-            Binary::Div => x / y,
-            Binary::Mod => x % y,
-            Binary::Pow => x.powf(y),
-            Binary::And => wrap_int((x as i64) & (y as i64)),
-            Binary::Or => wrap_int((x as i64) | (y as i64)),
-            Binary::Xor => wrap_int((x as i64) ^ (y as i64)),
-            Binary::Shl => wrap_int((x as i64) << (y as i64)),
-            Binary::Shr => wrap_int((x as i64) >> (y as i64)),
-            Binary::Eq => wrap_bool(x == y),
-            Binary::Ne => wrap_bool(x != y),
-            Binary::Lt => wrap_bool(x < y),
-            Binary::Gt => wrap_bool(x > y),
-            Binary::Le => wrap_bool(x <= y),
-            Binary::Ge => wrap_bool(x >= y),
+            Binary::Add => binary_float_op(a, b, ops::Add::add),
+            Binary::Sub => binary_float_op(a, b, ops::Sub::sub),
+            Binary::Mul => binary_float_op(a, b, ops::Mul::mul),
+            Binary::Div => binary_float_op(a, b, ops::Div::div),
+            Binary::Mod => binary_float_op(a, b, ops::Rem::rem),
+            Binary::Pow => binary_float_op(a, b, f64::powf),
+            Binary::Shl => binary_int_op(a, b, ops::Shl::shl),
+            Binary::Shr => binary_int_op(a, b, ops::Shr::shr),
+            Binary::And => binary_int_op(a, b, ops::BitAnd::bitand),
+            Binary::Or => binary_int_op(a, b, ops::BitOr::bitor),
+            Binary::Xor => binary_int_op(a, b, ops::BitXor::bitxor),
+            Binary::Eq => bool_op(a, b, cmp::PartialEq::eq),
+            Binary::Ne => bool_op(a, b, cmp::PartialEq::ne),
+            Binary::Lt => bool_op(a, b, cmp::PartialOrd::lt),
+            Binary::Gt => bool_op(a, b, cmp::PartialOrd::gt),
+            Binary::Le => bool_op(a, b, cmp::PartialOrd::le),
+            Binary::Ge => bool_op(a, b, cmp::PartialOrd::ge),
         }
     }
+}
+
+fn unary_float_op<F: Fn(f64) -> f64>(value: &Value, f: F) -> Result<Value> {
+    let num = value.as_number()?;
+    Ok(f(num).into())
+}
+
+#[allow(clippy::cast_possible_truncation, clippy::cast_precision_loss)]
+fn unary_int_op<F: Fn(i64) -> i64>(value: &Value, f: F) -> Result<Value> {
+    let num = value.as_number()?;
+    let num_result = f(num as i64) as f64;
+    Ok(num_result.into())
+}
+
+fn binary_float_op<F: Fn(f64, f64) -> f64>(a: &Value, b: &Value, f: F) -> Result<Value> {
+    let num_a = a.as_number()?;
+    let num_b = b.as_number()?;
+    let num_result = f(num_a, num_b);
+    Ok(num_result.into())
+}
+
+#[allow(clippy::cast_possible_truncation, clippy::cast_precision_loss)]
+fn binary_int_op<F: Fn(i64, i64) -> i64>(a: &Value, b: &Value, f: F) -> Result<Value> {
+    let num_a = a.as_number()?;
+    let num_b = b.as_number()?;
+    let num_result = f(num_a as i64, num_b as i64) as f64;
+    Ok(num_result.into())
+}
+
+#[allow(clippy::unnecessary_wraps)]
+fn bool_op<F: Fn(&Value, &Value) -> bool>(a: &Value, b: &Value, f: F) -> Result<Value> {
+    let bool_result = f(a, b);
+    Ok(bool_result.into())
 }

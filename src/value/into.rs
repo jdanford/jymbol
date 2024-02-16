@@ -6,10 +6,7 @@ impl TryInto<Symbol> for Value {
     type Error = Error;
 
     fn try_into(self) -> Result<Symbol> {
-        match self {
-            Value::Symbol(sym) => Ok(sym),
-            _ => Err(format!("expected symbol, got {self}")),
-        }
+        Value::as_symbol(&self)
     }
 }
 
@@ -17,14 +14,37 @@ impl TryInto<f64> for Value {
     type Error = Error;
 
     fn try_into(self) -> Result<f64> {
-        match self {
-            Value::Number(num) => Ok(num),
-            _ => Err(format!("expected number, got {self}")),
-        }
+        Value::as_number(&self)
     }
 }
 
 impl Value {
+    pub fn as_symbol(&self) -> Result<Symbol> {
+        if let &Value::Symbol(sym) = self {
+            Ok(sym)
+        } else {
+            Err(format!("expected symbol, got {self}"))
+        }
+    }
+
+    pub fn as_bool(&self) -> Result<bool> {
+        if self == &Value::true_() {
+            Ok(true)
+        } else if self == &Value::false_() {
+            Ok(false)
+        } else {
+            Err(format!("expected true or false, got {self}"))
+        }
+    }
+
+    pub fn as_number(&self) -> Result<f64> {
+        if let &Value::Number(num) = self {
+            Ok(num)
+        } else {
+            Err(format!("expected number, got {self}"))
+        }
+    }
+
     pub fn as_string(&self) -> Result<Gc<String>> {
         if let Value::String(s) = self {
             Ok(s.clone())

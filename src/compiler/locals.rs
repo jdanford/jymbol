@@ -21,7 +21,7 @@ impl Locals {
             return Err(format!("`{var}` is already defined"));
         }
 
-        let index = u16::try_from(self.vars.len()).expect("index is out of range");
+        let index = u16::try_from(self.vars.len()).unwrap();
         self.vars.push(var);
         self.indices.insert(var, index);
         Ok(index)

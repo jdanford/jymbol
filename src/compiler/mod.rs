@@ -31,7 +31,7 @@ impl<'a> Compiler<'a> {
 
         for (i, context) in self.contexts.iter().rev().enumerate() {
             if let Some(index) = context.locals().get_index(sym) {
-                let frame_index = u16::try_from(i + 1).expect("frame index is out of range");
+                let frame_index = u16::try_from(i + 1).unwrap();
                 return Ok((frame_index, index));
             }
         }
@@ -49,7 +49,7 @@ impl<'a> Compiler<'a> {
             fn_id
         } else {
             context = self.compile(context, body)?;
-            context.code_mut().emit(Inst::Ret);
+            context.code_mut().emit(Inst::Return);
 
             let code = context.code_mut().extract();
             self.vm.register_closure(closure_type, code)

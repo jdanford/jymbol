@@ -1,4 +1,4 @@
-use crate::{expr::vars, vm::ClosureType, Expr, Inst, Result, Symbol};
+use crate::{expr::vars, op, vm::ClosureType, Expr, Inst, Result, Symbol};
 
 use super::{context::Context, Compiler};
 
@@ -16,44 +16,76 @@ impl<'a> Compiler<'a> {
             }
             Expr::List(exprs) => self.compile_list(context, exprs),
             Expr::Do(exprs) => self.compile_do(context, exprs),
+            Expr::UnOp { op, expr } => self.compile_unop(context, *op, expr),
+            Expr::BinOp { op, left, right } => self.compile_binop(context, *op, left, right),
             Expr::Call { fn_, args } => self.compile_call(context, fn_, args),
             Expr::Fn { params, body } => self.compile_fn(context, params, body),
-            Expr::Let { var, value, body } => self.compile_let(context, *var, value, body),
-            Expr::If { cond, then, else_ } => self.compile_if(context, cond, then, else_),
+            Expr::Let {
+                var_expr_pairs,
+                body,
+            } => self.compile_let(context, var_expr_pairs, body),
+            Expr::If {
+                cond_expr_pairs,
+                else_,
+            } => self.compile_if(context, cond_expr_pairs, else_),
         }
     }
 
     fn compile_list(&mut self, mut context: Context, exprs: &[Expr]) -> Result<Context> {
-        for expr in exprs.iter() {
+        for expr in exprs {
             context = self.compile(context, expr)?;
         }
 
-        let value_count = u16::try_from(exprs.len()).expect("value count is out of range");
+        let value_count = u16::try_from(exprs.len()).unwrap();
         context.code_mut().emit(Inst::List(value_count));
 
         Ok(context)
     }
 
     fn compile_do(&mut self, mut context: Context, exprs: &[Expr]) -> Result<Context> {
-        for expr in exprs.iter() {
+        for expr in exprs {
             context = self.compile(context, expr)?;
             context.code_mut().emit(Inst::Drop);
         }
 
-        let value_count = u16::try_from(exprs.len()).expect("value count is out of range");
+        let value_count = u16::try_from(exprs.len()).unwrap();
         context.code_mut().emit(Inst::List(value_count));
 
         Ok(context)
     }
 
+    fn compile_unop(
+        &mut self,
+        mut context: Context,
+        unop: op::Unary,
+        expr: &Expr,
+    ) -> Result<Context> {
+        context = self.compile(context, expr)?;
+        context.code_mut().emit(Inst::UnOp(unop));
+        Ok(context)
+    }
+
+    fn compile_binop(
+        &mut self,
+        mut context: Context,
+        binop: op::Binary,
+        left: &Expr,
+        right: &Expr,
+    ) -> Result<Context> {
+        context = self.compile(context, left)?;
+        context = self.compile(context, right)?;
+        context.code_mut().emit(Inst::BinOp(binop));
+        Ok(context)
+    }
+
     fn compile_call(&mut self, mut context: Context, fn_: &Expr, args: &[Expr]) -> Result<Context> {
-        for arg in args.iter() {
+        for arg in args {
             context = self.compile(context, arg)?;
         }
 
         context = self.compile(context, fn_)?;
 
-        let arity = u16::try_from(args.len()).expect("arity is out of range");
+        let arity = u16::try_from(args.len()).unwrap();
         context.code_mut().emit(Inst::Call(arity));
         Ok(context)
     }
@@ -66,7 +98,7 @@ impl<'a> Compiler<'a> {
     ) -> Result<Context> {
         let fn_vars = vars::list(params);
         let closure_vars = body.free_vars().difference(fn_vars);
-        for &var in closure_vars.iter() {
+        for &var in &closure_vars {
             context = self.compile(context, &Expr::var(var))?;
         }
 
@@ -83,12 +115,10 @@ impl<'a> Compiler<'a> {
             body: body.clone(),
         };
 
-        let (new_new_context, fn_id) =
-            self.get_or_create_closure(new_context, &closure_type, body)?;
-        new_context = new_new_context; // lol
+        let fn_id;
+        (new_context, fn_id) = self.get_or_create_closure(new_context, &closure_type, body)?;
 
-        let closure_value_count =
-            u16::try_from(closure_vars.len()).expect("closure var count is out of range");
+        let closure_value_count = u16::try_from(closure_vars.len()).unwrap();
         new_context
             .code_mut()
             .emit(Inst::Closure(fn_id, closure_value_count));
@@ -98,41 +128,59 @@ impl<'a> Compiler<'a> {
 
     fn compile_let(
         &mut self,
-        mut context: Context,
-        var: Symbol,
-        value: &Expr,
+        context: Context,
+        var_expr_pairs: &[(Symbol, Expr)],
         body: &Expr,
     ) -> Result<Context> {
-        context = self.compile(context, value)?;
+        let mut extended_context = context.extend();
+        for (var, expr) in var_expr_pairs {
+            extended_context = self.compile(extended_context, expr)?;
+            let index = extended_context.locals_mut().declare(*var)?;
+            extended_context.code_mut().emit(Inst::Set(0, index));
+        }
 
-        let mut new_context = context.extend();
-        let index = new_context.locals_mut().declare(var)?;
-        new_context.code_mut().emit(Inst::Set(0, index));
-
-        self.compile(new_context, body)
+        self.compile(extended_context, body)
     }
 
     fn compile_if(
         &mut self,
         mut context: Context,
-        cond: &Expr,
-        then: &Expr,
+        cond_expr_pairs: &[(Expr, Expr)],
         else_: &Expr,
     ) -> Result<Context> {
-        context = self.compile(context, cond)?;
-        let branch_pc = context.code_mut().bookmark();
+        let mut entry_points = Vec::new();
+        let mut branch_points = Vec::new();
+        let mut exit_points = Vec::new();
 
-        context = self.compile(context, then)?;
-        let then_end_pc = context.code_mut().bookmark();
-        let else_start_pc = context.code().pc();
+        for (cond, expr) in cond_expr_pairs {
+            let entry_point = context.code().pc();
+            entry_points.push(entry_point);
+
+            context = self.compile(context, cond)?;
+            let branch_point = context.code_mut().bookmark();
+            branch_points.push(branch_point);
+
+            context = self.compile(context, expr)?;
+            let exit_point = context.code_mut().bookmark();
+            exit_points.push(exit_point);
+        }
+
+        let else_entry_point = context.code().pc();
+        entry_points.push(else_entry_point);
 
         context = self.compile(context, else_)?;
-        let target_pc = context.code().pc();
+        let end = context.code().pc();
 
-        context
-            .code_mut()
-            .patch(branch_pc, Inst::JumpIfNot(else_start_pc));
-        context.code_mut().patch(then_end_pc, Inst::Jump(target_pc));
+        for i in 0..branch_points.len() {
+            let next_entry_point = entry_points[i + 1];
+            let branch_point = branch_points[i];
+            let exit_point = exit_points[i];
+
+            context
+                .code_mut()
+                .patch(branch_point, Inst::JumpIfNot(next_entry_point));
+            context.code_mut().patch(exit_point, Inst::Jump(end));
+        }
 
         Ok(context)
     }

@@ -8,6 +8,16 @@ impl From<Symbol> for Value {
     }
 }
 
+impl From<bool> for Value {
+    fn from(b: bool) -> Self {
+        if b {
+            Value::true_()
+        } else {
+            Value::false_()
+        }
+    }
+}
+
 impl From<f64> for Value {
     fn from(num: f64) -> Self {
         Value::Number(num)
@@ -21,11 +31,6 @@ impl From<String> for Value {
 }
 
 impl Value {
-    #[must_use]
-    pub fn number(num: f64) -> Self {
-        Value::Number(num)
-    }
-
     pub fn symbol<S: AsRef<str>>(s: S) -> Self {
         Symbol::new(s).into()
     }

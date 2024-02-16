@@ -32,18 +32,15 @@ impl VM {
                 self.values.push(value);
             }
             &Inst::UnOp(op) => {
-                let value = self.pop_value();
-                let x: f64 = value.try_into()?;
-                let y = op.apply(x);
-                self.values.push(y.into());
+                let a = self.pop_value();
+                let b = op.apply(&a)?;
+                self.values.push(b);
             }
             &Inst::BinOp(op) => {
-                let value_y = self.pop_value();
-                let value_x = self.pop_value();
-                let x: f64 = value_x.try_into()?;
-                let y: f64 = value_y.try_into()?;
-                let z = op.apply(x, y);
-                self.values.push(z.into());
+                let b = self.pop_value();
+                let a = self.pop_value();
+                let c = op.apply(&a, &b)?;
+                self.values.push(c);
             }
             &Inst::Get(frame_index, index) => {
                 let locals = if frame_index == 0 {
@@ -61,6 +58,12 @@ impl VM {
                 } else {
                     self.relative_frame(frame_index).locals_mut()
                 };
+
+                if usize::from(index) >= locals.len() {
+                    let new_len = usize::from(index) + 1;
+                    locals.resize(new_len, Value::nil());
+                }
+
                 locals[index as usize] = value;
             }
             &Inst::Jump(jmp_pc) => {
@@ -84,7 +87,7 @@ impl VM {
                 self.frames.push(current_frame.into());
                 return Ok(Some(new_frame));
             }
-            Inst::Ret => {
+            Inst::Return => {
                 return Ok(None);
             }
         }

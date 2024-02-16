@@ -17,7 +17,7 @@ impl Compound {
         write!(f, "(")?;
 
         let list = Value::Compound(self.clone().into());
-        for (i, value) in list.iter().enumerate() {
+        for (i, value) in list.into_iter().enumerate() {
             if i > 0 {
                 write!(f, " ")?;
             }

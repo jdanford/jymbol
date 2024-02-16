@@ -1,42 +1,20 @@
-use im::{HashMap, HashSet};
-use once_cell::sync::Lazy;
+use crate::{symbol, try_as_array, Module, Result, Value};
 
-use crate::{symbol, Env, Expr, Result, Symbol, Value};
+fn type_(values: &[Value]) -> Result<Value> {
+    let [value] = try_as_array(values)?;
+    Ok(value.type_().into())
+}
 
-#[allow(clippy::module_name_repetitions)]
-pub type SpecialFn = fn(&[Value]) -> Result<Expr>;
+#[allow(clippy::unnecessary_wraps)]
+fn list(values: &[Value]) -> Result<Value> {
+    Ok(Value::list(values))
+}
 
-pub static FUNCTIONS: Lazy<HashMap<&str, SpecialFn>> = Lazy::new(|| {
-    let mut functions: HashMap<&str, SpecialFn> = HashMap::new();
+pub fn define_all(module: &mut Module) {
+    module.set(*symbol::NIL, Value::nil());
+    module.set(*symbol::TRUE, Value::true_());
+    module.set(*symbol::FALSE, Value::false_());
 
-    functions.insert("do", Expr::try_from_do);
-    functions.insert("fn", Expr::try_from_fn);
-    functions.insert("let", Expr::try_from_let);
-    functions.insert("if", Expr::try_from_if);
-
-    functions
-});
-
-pub static VARS: Lazy<HashSet<Symbol>> = Lazy::new(|| {
-    let mut vars: HashSet<Symbol> = HashSet::new();
-
-    vars.insert(*symbol::NIL);
-    vars.insert(*symbol::TRUE);
-    vars.insert(*symbol::FALSE);
-
-    for (&var, _) in (*FUNCTIONS).iter() {
-        vars.insert(var.into());
-    }
-
-    vars
-});
-
-pub fn env() -> Env {
-    let mut env = Env::new();
-
-    for &var in &*VARS {
-        env = env.set(var, var.into());
-    }
-
-    env
+    module.set_native("type", type_, 1);
+    module.set_native("list", list, ..);
 }

@@ -1,8 +1,8 @@
-use crate::{builtin, try_as_array, Expr, Result, ResultIterator, Symbol, Value};
+use crate::{op, special, try_as_array, Expr, Result, ResultIterator, Symbol, Value};
 
-fn check_var(var: Symbol) -> Result<()> {
-    if builtin::VARS.contains(&var) {
-        Err(format!("can't bind `{var}`"))
+fn check_var_is_valid(var: Symbol) -> Result<()> {
+    if special::VARS.contains(&var) {
+        Err(format!("can't bind reserved symbol `{var}`"))
     } else {
         Ok(())
     }
@@ -17,7 +17,7 @@ impl Expr {
     pub fn value(value: &Value) -> Result<Self> {
         match value {
             Value::Compound(cons) if cons.is_cons() => {
-                let values = value.iter().map(Expr::value).try_collect()?;
+                let values = value.into_iter().map(Expr::value).try_collect()?;
                 Ok(Expr::List(values))
             }
             _ => Ok(Expr::Value(value.clone())),
@@ -33,7 +33,7 @@ impl Expr {
 
     pub fn fn_(params: Vec<Symbol>, body: Expr) -> Result<Self> {
         for &param in &params {
-            check_var(param)?;
+            check_var_is_valid(param)?;
         }
 
         Ok(Expr::Fn {
@@ -42,21 +42,21 @@ impl Expr {
         })
     }
 
-    pub fn let_(var: Symbol, value: Expr, body: Expr) -> Result<Self> {
-        check_var(var)?;
+    pub fn let_(var_expr_pairs: Vec<(Symbol, Expr)>, body: Expr) -> Result<Self> {
+        for &(var, _) in &var_expr_pairs {
+            check_var_is_valid(var)?;
+        }
 
         Ok(Expr::Let {
-            var,
-            value: value.into(),
-            body: body.into(),
+            var_expr_pairs,
+            body: Box::new(body),
         })
     }
 
-    pub fn if_(cond: Expr, then: Expr, else_: Expr) -> Self {
+    pub fn if_(cond_expr_pairs: Vec<(Expr, Expr)>, else_: Expr) -> Self {
         Expr::If {
-            cond: cond.into(),
-            then: then.into(),
-            else_: else_.into(),
+            cond_expr_pairs,
+            else_: Box::new(else_),
         }
     }
 
@@ -65,7 +65,7 @@ impl Expr {
             &Value::Symbol(sym) => Ok(Expr::var(sym)),
             Value::Compound(cons) if cons.is_cons() => {
                 let (fn_value, values_list) = cons.as_cons()?;
-                let values = values_list.iter().cloned().collect::<Vec<_>>();
+                let values = values_list.into_iter().cloned().collect::<Vec<_>>();
                 Expr::try_from_application(&fn_value, &values)
             }
             Value::Compound(quote) if quote.is_quote() => {
@@ -80,7 +80,7 @@ impl Expr {
         match fn_value {
             Value::Symbol(sym) => {
                 let name = sym.as_str();
-                if let Some(special_func) = builtin::FUNCTIONS.get(&name) {
+                if let Some(special_func) = special::FUNCTIONS.get(&name) {
                     special_func(values)
                 } else {
                     Expr::try_from_call(fn_value, values)
@@ -89,6 +89,26 @@ impl Expr {
             Value::Closure(_) | Value::NativeFunction(_) => Expr::try_from_call(fn_value, values),
             _ => Err(format!("can't apply {fn_value}")),
         }
+    }
+
+    pub fn try_from_unop(op: op::Unary, values: &[Value]) -> Result<Expr> {
+        let [value] = try_as_array(values)?;
+        let expr = value.try_into()?;
+        Ok(Expr::UnOp {
+            op,
+            expr: Box::new(expr),
+        })
+    }
+
+    pub fn try_from_binop(op: op::Binary, values: &[Value]) -> Result<Expr> {
+        let [left_value, right_value] = try_as_array(values)?;
+        let left = left_value.try_into()?;
+        let right = right_value.try_into()?;
+        Ok(Expr::BinOp {
+            op,
+            left: Box::new(left),
+            right: Box::new(right),
+        })
     }
 
     pub fn try_from_do(values: &[Value]) -> Result<Expr> {
@@ -105,7 +125,7 @@ impl Expr {
     pub fn try_from_fn(values: &[Value]) -> Result<Expr> {
         let [params_list, body_value] = try_as_array(values)?;
         let params = params_list
-            .iter()
+            .into_iter()
             .map(|value| value.clone().try_into())
             .try_collect()?;
         let body = body_value.try_into()?;
@@ -113,19 +133,47 @@ impl Expr {
     }
 
     pub fn try_from_let(values: &[Value]) -> Result<Expr> {
-        let [var_value, value, body_value] = try_as_array(values)?;
-        let var = var_value.clone().try_into()?;
-        let value_expr = value.try_into()?;
-        let body = body_value.try_into()?;
-        Expr::let_(var, value_expr, body)
+        match values {
+            [var_value_pairs @ .., body_value] if var_value_pairs.len() >= 2 => {
+                let var_expr_pairs = var_value_pairs
+                    .chunks_exact(2)
+                    .map(Expr::try_from_var_expr_pair)
+                    .try_collect()?;
+                let body = body_value.try_into()?;
+                Expr::let_(var_expr_pairs, body)
+            }
+            _ => Err("malformed `let` expression".to_string()),
+        }
+    }
+
+    fn try_from_var_expr_pair(values: &[Value]) -> Result<(Symbol, Expr)> {
+        if let [var_value, value] = values {
+            Result::Ok((var_value.clone().try_into()?, value.try_into()?))
+        } else {
+            Err("malformed `let` expression".to_string())
+        }
     }
 
     pub fn try_from_if(values: &[Value]) -> Result<Expr> {
-        let [cond_value, then_value, else_value] = try_as_array(values)?;
-        let cond_expr = cond_value.try_into()?;
-        let then_expr = then_value.try_into()?;
-        let else_expr = else_value.try_into()?;
-        Ok(Expr::if_(cond_expr, then_expr, else_expr))
+        match values {
+            [cond_value_pairs @ .., else_value] if cond_value_pairs.len() >= 2 => {
+                let cond_expr_pairs = cond_value_pairs
+                    .chunks_exact(2)
+                    .map(Expr::try_from_cond_expr_pair)
+                    .try_collect()?;
+                let else_expr = else_value.try_into()?;
+                Ok(Expr::if_(cond_expr_pairs, else_expr))
+            }
+            _ => Err("malformed `if` expression".to_string()),
+        }
+    }
+
+    fn try_from_cond_expr_pair(values: &[Value]) -> Result<(Expr, Expr)> {
+        if let [cond_value, expr_value] = values {
+            Result::Ok((cond_value.try_into()?, expr_value.try_into()?))
+        } else {
+            Err("malformed `if` expression".to_string())
+        }
     }
 }
 

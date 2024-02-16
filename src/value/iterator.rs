@@ -5,7 +5,7 @@ pub struct Iter<'a> {
 }
 
 impl<'a> Iter<'a> {
-    pub fn new(value: &Value) -> Iter {
+    pub fn new(value: &'a Value) -> Iter {
         Iter { value }
     }
 }
@@ -28,6 +28,15 @@ impl<'a> Iterator for Iter<'a> {
 
 impl<'a> Value {
     pub fn iter(&'a self) -> Iter<'a> {
+        Iter::new(self)
+    }
+}
+
+impl<'a> IntoIterator for &'a Value {
+    type IntoIter = Iter<'a>;
+    type Item = &'a Value;
+
+    fn into_iter(self) -> Self::IntoIter {
         Iter::new(self)
     }
 }

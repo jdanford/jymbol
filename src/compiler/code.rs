@@ -9,7 +9,7 @@ impl Code {
     }
 
     pub fn pc(&self) -> u32 {
-        u32::try_from(self.0.len()).expect("pc is out of range")
+        u32::try_from(self.0.len()).unwrap()
     }
 
     pub fn emit(&mut self, inst: Inst) -> u32 {

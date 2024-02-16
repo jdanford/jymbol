@@ -85,13 +85,13 @@ impl VM {
 
         let mut context = Context::new();
         let locals = context.locals_mut();
-        for &var in free_vars.iter() {
+        for &var in &free_vars {
             locals.declare(var)?;
         }
 
         let mut compiler = Compiler::new(self);
         context = compiler.compile(context, expr)?;
-        context.code_mut().emit(Inst::Ret);
+        context.code_mut().emit(Inst::Return);
 
         let code = context.code_mut().extract();
         let fn_id = FnId::next();
@@ -103,9 +103,7 @@ impl VM {
         self.frames.push(frame);
         self.run()?;
 
-        self.values
-            .pop()
-            .ok_or_else(|| "stack is empty".to_string())
+        Ok(self.pop_value())
     }
 
     fn run(&mut self) -> Result<()> {
