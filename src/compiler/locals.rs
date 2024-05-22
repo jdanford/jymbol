@@ -1,3 +1,4 @@
+use anyhow::anyhow;
 use im::HashMap;
 
 use crate::{Result, ResultIterator, Symbol};
@@ -18,7 +19,7 @@ impl Locals {
 
     pub fn declare(&mut self, var: Symbol) -> Result<u16> {
         if self.indices.contains_key(&var) {
-            return Err(format!("`{var}` is already defined"));
+            return Err(anyhow!("`{var}` is already defined"));
         }
 
         let index = u16::try_from(self.vars.len()).unwrap();

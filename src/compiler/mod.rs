@@ -3,6 +3,8 @@ mod compile;
 pub mod context;
 mod locals;
 
+use anyhow::anyhow;
+
 use crate::{
     vm::ClosureType,
     Inst, {Expr, FnId, Result, Symbol, VM},
@@ -36,7 +38,7 @@ impl<'a> Compiler<'a> {
             }
         }
 
-        Err(format!("`{sym}` is not defined"))
+        Err(anyhow!("`{sym}` is not defined"))
     }
 
     fn get_or_create_closure(

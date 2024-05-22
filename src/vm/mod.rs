@@ -1,6 +1,7 @@
 mod frame;
 mod step;
 
+use anyhow::anyhow;
 pub use frame::Frame;
 
 use im::HashMap;
@@ -129,7 +130,7 @@ impl VM {
         match func {
             Value::Closure(closure) => Ok(self.compiled_frame(closure, arity)),
             &Value::NativeFunction(fn_id) => Ok(self.native_frame(fn_id, arity)),
-            _ => Err(format!("can't call {func}")),
+            _ => Err(anyhow!("can't call {func}")),
         }
     }
 

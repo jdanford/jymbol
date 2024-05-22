@@ -1,4 +1,4 @@
-use crate::{symbol, Value};
+use crate::Value;
 
 pub struct Iter<'a> {
     value: &'a Value,
@@ -20,7 +20,7 @@ impl<'a> Iterator for Iter<'a> {
                 self.value = tail;
                 Some(head)
             }
-            &Value::Symbol(sym) if sym == *symbol::NIL => None,
+            value if value.is_nil() => None,
             _ => panic!("expected cons or nil, got {}", self.value),
         }
     }

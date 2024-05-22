@@ -1,5 +1,7 @@
 use std::ops::{RangeFrom, RangeFull};
 
+use anyhow::anyhow;
+
 use crate::Result;
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -33,16 +35,16 @@ impl Arity {
                 if actual == expected {
                     Ok(())
                 } else if expected == 1 {
-                    Err(format!("expected {expected} argument, got {actual}"))
+                    Err(anyhow!("expected {expected} argument, got {actual}"))
                 } else {
-                    Err(format!("expected {expected} arguments, got {actual}"))
+                    Err(anyhow!("expected {expected} arguments, got {actual}"))
                 }
             }
             Arity::AtLeast(expected) => {
                 if actual >= expected {
                     Ok(())
                 } else {
-                    Err(format!(
+                    Err(anyhow!(
                         "expected {expected} or more arguments, got {actual}"
                     ))
                 }

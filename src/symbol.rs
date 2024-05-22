@@ -3,11 +3,12 @@ use std::{
     num::NonZeroU32,
 };
 
+use anyhow::anyhow;
 use gc::{unsafe_empty_trace, Finalize, Trace};
 use once_cell::sync::Lazy;
 use symbol_table::SymbolTable;
 
-use crate::Result;
+use crate::{Error, Result};
 
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Finalize)]
 pub struct Symbol(symbol_table::Symbol);
@@ -35,12 +36,12 @@ impl From<Symbol> for u32 {
 }
 
 impl TryFrom<u32> for Symbol {
-    type Error = String;
+    type Error = Error;
 
     fn try_from(value: u32) -> Result<Self> {
         let i: NonZeroU32 = value
             .try_into()
-            .map_err(|_| "expected non-zero value".to_string())?;
+            .map_err(|_| anyhow!("expected non-zero value"))?;
         Ok(i.into())
     }
 }

@@ -1,3 +1,4 @@
+use anyhow::anyhow;
 use gc::{Finalize, Trace};
 
 use crate::{symbol, try_as_array, Result, Symbol, Value};
@@ -21,24 +22,28 @@ impl Compound {
         self.len() == 0
     }
 
+    pub fn has_type(&self, type_: Symbol) -> bool {
+        self.type_ == type_
+    }
+
     pub fn is_cons(&self) -> bool {
-        self.type_ == *symbol::CONS
+        self.has_type(*symbol::CONS)
     }
 
     pub fn is_quote(&self) -> bool {
-        self.type_ == *symbol::QUOTE
+        self.has_type(*symbol::QUOTE)
     }
 
     pub fn is_quasiquote(&self) -> bool {
-        self.type_ == *symbol::QUASIQUOTE
+        self.has_type(*symbol::QUASIQUOTE)
     }
 
     pub fn is_unquote(&self) -> bool {
-        self.type_ == *symbol::UNQUOTE
+        self.has_type(*symbol::UNQUOTE)
     }
 
     pub fn is_unquote_splicing(&self) -> bool {
-        self.type_ == *symbol::UNQUOTE_SPLICING
+        self.has_type(*symbol::UNQUOTE_SPLICING)
     }
 
     pub fn as_array<const N: usize>(&self) -> Result<&[Value; N]> {
@@ -50,12 +55,12 @@ impl Compound {
         if actual_type == expected_type {
             self.as_array()
         } else {
-            Err(format!("expected {expected_type}, got {actual_type}"))
+            Err(anyhow!("expected {expected_type}, got {actual_type}"))
         }
     }
 
     pub fn as_cons(&self) -> Result<(Value, Value)> {
-        let [head_ref, tail_ref] = self.as_checked_array::<2>(*symbol::CONS)?;
+        let [head_ref, tail_ref] = self.as_checked_array(*symbol::CONS)?;
         Ok((head_ref.clone(), tail_ref.clone()))
     }
 }

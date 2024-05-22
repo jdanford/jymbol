@@ -1,5 +1,6 @@
 use std::ops::{Deref, DerefMut};
 
+use anyhow::anyhow;
 use gc::{Finalize, Trace};
 use im::HashMap;
 
@@ -36,24 +37,7 @@ impl Env {
         self.map
             .get(&sym)
             .cloned()
-            .ok_or_else(|| format!("`{sym}` is not defined"))
-    }
-
-    #[must_use]
-    pub fn merge(self, other: Self) -> Self {
-        let map = self.map.union(other.map);
-        Env { map }
-    }
-
-    pub fn merge_unique(self, other: Self) -> Result<Self> {
-        let intersection = self.map.clone().intersection(other.map.clone());
-        if !intersection.is_empty() {
-            let existing_vars = intersection.keys().collect::<Vec<_>>();
-            let existing_var = existing_vars[0];
-            return Err(format!("`{existing_var}` is already defined"));
-        }
-
-        Ok(self.merge(other))
+            .ok_or_else(|| anyhow!("`{sym}` is not defined"))
     }
 
     #[must_use]
@@ -70,6 +54,23 @@ impl Env {
         }
 
         env
+    }
+
+    #[must_use]
+    pub fn merge(self, other: Self) -> Self {
+        let map = self.map.union(other.map);
+        Env { map }
+    }
+
+    pub fn merge_unique(self, other: Self) -> Result<Self> {
+        let intersection = self.map.clone().intersection(other.map.clone());
+        if !intersection.is_empty() {
+            let existing_vars = intersection.keys().collect::<Vec<_>>();
+            let existing_var = existing_vars[0];
+            return Err(anyhow!("`{existing_var}` is already defined"));
+        }
+
+        Ok(self.merge(other))
     }
 }
 

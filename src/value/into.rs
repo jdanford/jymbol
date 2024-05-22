@@ -1,3 +1,4 @@
+use anyhow::anyhow;
 use gc::Gc;
 
 use crate::{value::Compound, Error, FnId, Result, Symbol, Value};
@@ -23,7 +24,7 @@ impl Value {
         if let &Value::Symbol(sym) = self {
             Ok(sym)
         } else {
-            Err(format!("expected symbol, got {self}"))
+            Err(anyhow!("expected symbol, got {self}"))
         }
     }
 
@@ -33,7 +34,7 @@ impl Value {
         } else if self == &Value::false_() {
             Ok(false)
         } else {
-            Err(format!("expected true or false, got {self}"))
+            Err(anyhow!("expected true or false, got {self}"))
         }
     }
 
@@ -41,7 +42,7 @@ impl Value {
         if let &Value::Number(num) = self {
             Ok(num)
         } else {
-            Err(format!("expected number, got {self}"))
+            Err(anyhow!("expected number, got {self}"))
         }
     }
 
@@ -49,7 +50,7 @@ impl Value {
         if let Value::String(s) = self {
             Ok(s.clone())
         } else {
-            Err(format!("expected string, got {self}"))
+            Err(anyhow!("expected string, got {self}"))
         }
     }
 
@@ -57,7 +58,7 @@ impl Value {
         if let Value::Compound(compound) = self {
             Ok(compound.clone())
         } else {
-            Err(format!("expected compound, got {self}"))
+            Err(anyhow!("expected compound, got {self}"))
         }
     }
 
@@ -65,7 +66,7 @@ impl Value {
         if let &Value::NativeFunction(fn_id) = self {
             Ok(fn_id)
         } else {
-            Err(format!("expected native function, got {self}"))
+            Err(anyhow!("expected native function, got {self}"))
         }
     }
 }

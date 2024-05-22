@@ -1,8 +1,10 @@
-use crate::{op, special, try_as_array, Expr, Result, ResultIterator, Symbol, Value};
+use anyhow::anyhow;
+
+use crate::{op, special, try_as_array, Error, Expr, Result, ResultIterator, Symbol, Value};
 
 fn check_var_is_valid(var: Symbol) -> Result<()> {
     if special::VARS.contains(&var) {
-        Err(format!("can't bind reserved symbol `{var}`"))
+        Err(anyhow!("can't bind reserved symbol `{var}`"))
     } else {
         Ok(())
     }
@@ -87,7 +89,7 @@ impl Expr {
                 }
             }
             Value::Closure(_) | Value::NativeFunction(_) => Expr::try_from_call(fn_value, values),
-            _ => Err(format!("can't apply {fn_value}")),
+            _ => Err(anyhow!("can't apply {fn_value}")),
         }
     }
 
@@ -142,7 +144,7 @@ impl Expr {
                 let body = body_value.try_into()?;
                 Expr::let_(var_expr_pairs, body)
             }
-            _ => Err("malformed `let` expression".to_string()),
+            _ => Err(anyhow!("malformed `let` expression")),
         }
     }
 
@@ -150,7 +152,7 @@ impl Expr {
         if let [var_value, value] = values {
             Result::Ok((var_value.clone().try_into()?, value.try_into()?))
         } else {
-            Err("malformed `let` expression".to_string())
+            Err(anyhow!("malformed `let` expression"))
         }
     }
 
@@ -164,7 +166,7 @@ impl Expr {
                 let else_expr = else_value.try_into()?;
                 Ok(Expr::if_(cond_expr_pairs, else_expr))
             }
-            _ => Err("malformed `if` expression".to_string()),
+            _ => Err(anyhow!("malformed `if` expression")),
         }
     }
 
@@ -172,13 +174,13 @@ impl Expr {
         if let [cond_value, expr_value] = values {
             Result::Ok((cond_value.try_into()?, expr_value.try_into()?))
         } else {
-            Err("malformed `if` expression".to_string())
+            Err(anyhow!("malformed `if` expression"))
         }
     }
 }
 
 impl TryFrom<&Value> for Expr {
-    type Error = String;
+    type Error = Error;
 
     fn try_from(value: &Value) -> Result<Expr> {
         Expr::try_from_value(value)

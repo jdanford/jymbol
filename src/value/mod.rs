@@ -41,27 +41,22 @@ impl Value {
         (*symbol::FALSE).into()
     }
 
+    pub fn is_nil(&self) -> bool {
+        self == &Value::nil()
+    }
+
+    pub fn is_boolean(&self) -> bool {
+        self == &Value::true_() || self == &Value::false_()
+    }
+
     pub fn is_truthy(&self) -> bool {
         *self != Value::false_()
     }
 
-    pub fn type_index(&self) -> u32 {
-        match self {
-            _ if self == &Value::nil() => 0,
-            _ if self == &Value::true_() || self == &Value::false_() => 1,
-            Value::Symbol(_) => 2,
-            Value::Number(_) => 3,
-            Value::String(_) => 4,
-            Value::Closure(_) => 5,
-            Value::NativeFunction(_) => 6,
-            Value::Compound(compound) => compound.type_.into(),
-        }
-    }
-
     pub fn type_(&self) -> Symbol {
         match self {
-            _ if self == &Value::nil() => *symbol::NIL,
-            _ if self == &Value::true_() || self == &Value::false_() => *symbol::BOOLEAN,
+            _ if self.is_nil() => *symbol::NIL,
+            _ if self.is_boolean() => *symbol::BOOLEAN,
             Value::Symbol(_) => *symbol::SYMBOL,
             Value::Number(_) => *symbol::NUMBER,
             Value::String(_) => *symbol::STRING,
@@ -81,7 +76,7 @@ impl PartialOrd for Value {
             (Value::Compound(a), Value::Compound(b)) if a.type_ == b.type_ => {
                 a.values.partial_cmp(&b.values)
             }
-            _ => self.type_index().partial_cmp(&other.type_index()),
+            _ => self.type_().partial_cmp(&other.type_()),
         }
     }
 }

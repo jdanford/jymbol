@@ -1,6 +1,6 @@
-use jymbol::{Module, VM};
+use jymbol::{Error, Module, VM};
 
-fn main() -> Result<(), String> {
+fn main() -> Result<(), Error> {
     let mut vm = VM::new();
     let mut module = Module::new(&mut vm);
 

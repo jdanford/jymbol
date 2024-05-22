@@ -1,8 +1,5 @@
-#![cfg_attr(feature = "cargo-clippy", deny(clippy::all, clippy::pedantic))]
-#![cfg_attr(
-    feature = "cargo-clippy",
-    allow(clippy::missing_docs_in_private_items, clippy::missing_errors_doc)
-)]
+#![deny(clippy::pedantic)]
+#![allow(clippy::missing_docs_in_private_items, clippy::missing_errors_doc)]
 
 mod arity;
 mod builtin;
