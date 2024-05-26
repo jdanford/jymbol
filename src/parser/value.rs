@@ -5,7 +5,7 @@ use crate::{
     Value,
 };
 
-const NON_SYMBOL_CHARS: &str = "()[]{}\"'`,@";
+static NON_SYMBOL_CHARS: &str = "()[]{}\"'`,@.";
 
 fn is_symbol(c: char) -> bool {
     !c.is_control() && !c.is_whitespace() && !NON_SYMBOL_CHARS.contains(c)

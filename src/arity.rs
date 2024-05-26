@@ -16,15 +16,15 @@ impl From<usize> for Arity {
     }
 }
 
-impl From<RangeFull> for Arity {
-    fn from(_: RangeFull) -> Self {
-        Arity::AtLeast(0)
-    }
-}
-
 impl From<RangeFrom<usize>> for Arity {
     fn from(range: RangeFrom<usize>) -> Self {
         Arity::AtLeast(range.start)
+    }
+}
+
+impl From<RangeFull> for Arity {
+    fn from(_: RangeFull) -> Self {
+        Arity::AtLeast(0)
     }
 }
 
