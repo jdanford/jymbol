@@ -13,21 +13,21 @@ impl VM {
             Inst::Drop => {
                 self.values.pop();
             }
-            Inst::Value(ref value) => {
+            Inst::Value(value) => {
                 self.values.push(value.clone());
             }
             &Inst::List(value_count) => {
-                let values = self.pop_values(value_count as usize);
+                let values = self.pop_values(value_count.into());
                 let value = Value::list(values);
                 self.values.push(value);
             }
             &Inst::Compound(type_, value_count) => {
-                let values = self.pop_values(value_count as usize);
+                let values = self.pop_values(value_count.into());
                 let value = Value::compound(type_, values);
                 self.values.push(value);
             }
             &Inst::Closure(fn_id, value_count) => {
-                let values = self.pop_values(value_count as usize);
+                let values = self.pop_values(value_count.into());
                 let value = Value::closure(fn_id, values);
                 self.values.push(value);
             }
@@ -52,6 +52,7 @@ impl VM {
                 self.values.push(value);
             }
             &Inst::Set(frame_index, index) => {
+                let index_ = usize::from(index);
                 let value = self.pop_value();
                 let locals = if frame_index == 0 {
                     &mut current_frame.locals
@@ -59,12 +60,12 @@ impl VM {
                     self.relative_frame(frame_index).locals_mut()
                 };
 
-                if usize::from(index) >= locals.len() {
-                    let new_len = usize::from(index) + 1;
+                if index_ >= locals.len() {
+                    let new_len = index_ + 1;
                     locals.resize(new_len, Value::nil());
                 }
 
-                locals[index as usize] = value;
+                locals[index_] = value;
             }
             &Inst::Jump(jmp_pc) => {
                 current_frame.pc = jmp_pc;

@@ -1,5 +1,6 @@
+use std::sync::LazyLock;
+
 use im::{HashMap, OrdSet};
-use once_cell::sync::Lazy;
 
 use crate::{
     op::{Binary, Unary},
@@ -9,7 +10,7 @@ use crate::{
 #[allow(clippy::module_name_repetitions)]
 pub type SpecialFn = fn(&[Value]) -> Result<Expr>;
 
-pub static FUNCTIONS: Lazy<HashMap<&str, SpecialFn>> = Lazy::new(|| {
+pub static FUNCTIONS: LazyLock<HashMap<&str, SpecialFn>> = LazyLock::new(|| {
     let mut functions: HashMap<&str, SpecialFn> = HashMap::new();
 
     functions.insert("do", Expr::try_from_do);
@@ -48,7 +49,7 @@ pub static FUNCTIONS: Lazy<HashMap<&str, SpecialFn>> = Lazy::new(|| {
     functions
 });
 
-pub static VARS: Lazy<OrdSet<Symbol>> = Lazy::new(|| {
+pub static VARS: LazyLock<OrdSet<Symbol>> = LazyLock::new(|| {
     let mut vars: OrdSet<Symbol> = OrdSet::new();
 
     vars.insert(*symbol::NIL);

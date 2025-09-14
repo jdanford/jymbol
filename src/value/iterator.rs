@@ -5,7 +5,7 @@ pub struct Iter<'a> {
 }
 
 impl<'a> Iter<'a> {
-    pub fn new(value: &'a Value) -> Iter {
+    pub fn new(value: &'a Value) -> Self {
         Iter { value }
     }
 }

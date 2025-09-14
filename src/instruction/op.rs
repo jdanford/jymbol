@@ -79,7 +79,8 @@ impl Binary {
 
 fn unary_float_op<F: Fn(f64) -> f64>(value: &Value, f: F) -> Result<Value> {
     let num = value.as_number()?;
-    Ok(f(num).into())
+    let num_result = f(num);
+    Ok(num_result.into())
 }
 
 #[allow(clippy::cast_possible_truncation, clippy::cast_precision_loss)]

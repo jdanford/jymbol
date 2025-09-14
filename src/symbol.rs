@@ -1,11 +1,10 @@
 use std::{
     fmt::{self, Debug, Display, Formatter},
-    num::NonZeroU32,
+    num::NonZeroU32, sync::LazyLock,
 };
 
 use anyhow::anyhow;
 use gc::{unsafe_empty_trace, Finalize, Trace};
-use once_cell::sync::Lazy;
 use symbol_table::SymbolTable;
 
 use crate::{Error, Result};
@@ -57,7 +56,7 @@ impl Symbol {
     }
 }
 
-static GLOBAL_TABLE: Lazy<SymbolTable> = Lazy::new(SymbolTable::new);
+static GLOBAL_TABLE: LazyLock<SymbolTable> = LazyLock::new(SymbolTable::new);
 
 impl From<&str> for Symbol {
     fn from(s: &str) -> Self {
@@ -97,8 +96,8 @@ impl Display for Symbol {
 
 macro_rules! static_symbol {
     ($name:ident = $value:expr) => {
-        pub static $name: ::once_cell::sync::Lazy<$crate::Symbol> =
-            ::once_cell::sync::Lazy::new(|| $crate::Symbol::new($value));
+        pub static $name: ::std::sync::LazyLock<$crate::Symbol> =
+            ::std::sync::LazyLock::new(|| $crate::Symbol::new($value));
     };
 }
 

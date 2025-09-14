@@ -83,19 +83,25 @@ impl Default for Env {
 unsafe impl Trace for Env {
     unsafe fn trace(&self) {
         for value in self.values() {
-            value.trace();
+            unsafe {
+                value.trace();
+            }
         }
     }
 
     unsafe fn root(&self) {
         for value in self.values() {
-            value.root();
+            unsafe {
+                value.root();
+            }
         }
     }
 
     unsafe fn unroot(&self) {
         for value in self.values() {
-            value.unroot();
+            unsafe {
+                value.unroot();
+            }
         }
     }
 

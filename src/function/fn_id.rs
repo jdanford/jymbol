@@ -1,7 +1,6 @@
-use std::{num::NonZeroU32, sync::Mutex};
+use std::{num::NonZeroU32, sync::{LazyLock, Mutex}};
 
 use gc::{unsafe_empty_trace, Finalize, Trace};
-use once_cell::sync::Lazy;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Finalize)]
 pub struct FnId(NonZeroU32);
@@ -24,11 +23,11 @@ impl From<FnId> for NonZeroU32 {
 
 impl From<FnId> for u32 {
     fn from(sym: FnId) -> Self {
-        u32::from(sym.0)
+        sym.0.into()
     }
 }
 
-static NEXT_ID: Lazy<Mutex<FnId>> = Lazy::new(|| {
+static NEXT_ID: LazyLock<Mutex<FnId>> = LazyLock::new(|| {
     let id = NonZeroU32::new(1).unwrap();
     Mutex::new(FnId::from(id))
 });

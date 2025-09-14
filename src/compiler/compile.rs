@@ -2,7 +2,7 @@ use crate::{expr::vars, op, vm::ClosureType, Expr, Inst, Result, Symbol};
 
 use super::{context::Context, Compiler};
 
-impl<'a> Compiler<'a> {
+impl Compiler<'_> {
     pub fn compile(&mut self, mut context: Context, expr: &Expr) -> Result<Context> {
         match expr {
             Expr::Value(value) => {
@@ -85,7 +85,7 @@ impl<'a> Compiler<'a> {
 
         context = self.compile(context, fn_)?;
 
-        let arity = u16::try_from(args.len()).unwrap();
+        let arity = args.len().try_into().unwrap();
         context.code_mut().emit(Inst::Call(arity));
         Ok(context)
     }
@@ -118,7 +118,7 @@ impl<'a> Compiler<'a> {
         let fn_id;
         (new_context, fn_id) = self.get_or_create_closure(new_context, &closure_type, body)?;
 
-        let closure_value_count = u16::try_from(closure_vars.len()).unwrap();
+        let closure_value_count = closure_vars.len().try_into().unwrap();
         new_context
             .code_mut()
             .emit(Inst::Closure(fn_id, closure_value_count));

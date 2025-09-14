@@ -137,13 +137,13 @@ impl VM {
     fn compiled_frame(&mut self, closure: &function::Closure, arity: u16) -> Frame {
         let mut locals = Vec::new();
         locals.extend(closure.values.clone());
-        locals.extend(self.pop_values(arity as usize));
+        locals.extend(self.pop_values(arity.into()));
         Frame::compiled(closure.fn_id, locals)
     }
 
     fn native_frame(&mut self, fn_id: FnId, arity: u16) -> Frame {
         let mut locals = Vec::new();
-        locals.extend(self.pop_values(arity as usize));
+        locals.extend(self.pop_values(arity.into()));
         Frame::native(fn_id, locals)
     }
 }
