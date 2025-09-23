@@ -1,12 +1,11 @@
 use std::ops::{Deref, DerefMut};
 
 use anyhow::anyhow;
-use gc::{Finalize, Trace};
 use im::HashMap;
 
 use crate::{Result, Symbol, Value};
 
-#[derive(Clone, PartialEq, Debug, Finalize)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct Env {
     pub map: HashMap<Symbol, Value>,
 }
@@ -77,37 +76,5 @@ impl Env {
 impl Default for Env {
     fn default() -> Self {
         Env::new()
-    }
-}
-
-unsafe impl Trace for Env {
-    unsafe fn trace(&self) {
-        for value in self.values() {
-            unsafe {
-                value.trace();
-            }
-        }
-    }
-
-    unsafe fn root(&self) {
-        for value in self.values() {
-            unsafe {
-                value.root();
-            }
-        }
-    }
-
-    unsafe fn unroot(&self) {
-        for value in self.values() {
-            unsafe {
-                value.unroot();
-            }
-        }
-    }
-
-    fn finalize_glue(&self) {
-        for value in self.values() {
-            value.finalize_glue();
-        }
     }
 }

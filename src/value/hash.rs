@@ -28,11 +28,11 @@ impl Hash for Value {
             }
             Value::Closure(closure) => {
                 state.write_symbol(*symbol::FN);
-                state.write_u32(closure.fn_id.into());
+                state.write_u32(closure.fn_id);
             }
             &Value::NativeFunction(fn_id) => {
                 state.write_symbol(*symbol::NATIVE_FN);
-                state.write_u32((fn_id).into());
+                state.write_u32(fn_id);
             }
             Value::Compound(compound) => {
                 state.write_symbol(compound.type_);

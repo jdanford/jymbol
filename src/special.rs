@@ -1,6 +1,6 @@
-use std::sync::LazyLock;
+use std::{collections::HashMap, sync::LazyLock};
 
-use im::{HashMap, OrdSet};
+use im::{OrdSet};
 
 use crate::{
     op::{Binary, Unary},
@@ -56,7 +56,7 @@ pub static VARS: LazyLock<OrdSet<Symbol>> = LazyLock::new(|| {
     vars.insert(*symbol::TRUE);
     vars.insert(*symbol::FALSE);
 
-    for (&var, _) in &*FUNCTIONS {
+    for &var in FUNCTIONS.keys() {
         vars.insert(var);
     }
 

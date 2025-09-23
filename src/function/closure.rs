@@ -1,10 +1,10 @@
 use std::fmt::{self, Display, Formatter};
 
-use gc::{Finalize, Trace};
+use dumpster::Trace;
 
 use crate::{FnId, Value};
 
-#[derive(Clone, PartialEq, Debug, Trace, Finalize)]
+#[derive(Clone, PartialEq, Debug, Trace)]
 pub struct Closure {
     pub fn_id: FnId,
     pub values: Vec<Value>,

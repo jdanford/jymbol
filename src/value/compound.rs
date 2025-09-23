@@ -1,9 +1,9 @@
 use anyhow::anyhow;
-use gc::{Finalize, Trace};
+use dumpster::Trace;
 
 use crate::{symbol, try_as_array, Result, Symbol, Value};
 
-#[derive(Clone, PartialEq, Debug, Trace, Finalize)]
+#[derive(Clone, PartialEq, Debug, Trace)]
 pub struct Compound {
     pub type_: Symbol,
     pub values: Vec<Value>,

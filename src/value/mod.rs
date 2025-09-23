@@ -9,11 +9,11 @@ use std::cmp::Ordering;
 
 pub use compound::Compound;
 
-use gc::{Finalize, Gc, Trace};
+use dumpster::{unsync::Gc, Trace};
 
 use crate::{function, symbol, FnId, Symbol};
 
-#[derive(Clone, PartialEq, Debug, Trace, Finalize)]
+#[derive(Clone, PartialEq, Debug, Trace)]
 pub enum Value {
     Symbol(Symbol),
     Number(f64),

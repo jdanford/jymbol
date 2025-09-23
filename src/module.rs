@@ -1,4 +1,4 @@
-use crate::{builtin, function::RawFn, parser, Arity, Env, Expr, Result, Symbol, Value, VM};
+use crate::{Arity, Env, Expr, Result, Symbol, VM, Value, builtin, function::RawFn, parser};
 
 #[derive(Debug)]
 pub struct Module<'a> {

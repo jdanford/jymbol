@@ -1,19 +1,22 @@
 use std::{
     fmt::{self, Debug, Display, Formatter},
-    num::NonZeroU32, sync::LazyLock,
+    num::NonZeroU32,
+    sync::LazyLock,
 };
 
 use anyhow::anyhow;
-use gc::{unsafe_empty_trace, Finalize, Trace};
+use dumpster::Trace;
 use symbol_table::SymbolTable;
 
 use crate::{Error, Result};
 
-#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Finalize)]
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct Symbol(symbol_table::Symbol);
 
 unsafe impl Trace for Symbol {
-    unsafe_empty_trace!();
+    fn accept<V: dumpster::Visitor>(&self, _visitor: &mut V) -> std::result::Result<(), ()> {
+        Ok(())
+    }
 }
 
 impl From<NonZeroU32> for Symbol {

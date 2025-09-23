@@ -1,6 +1,8 @@
 use std::fmt::{self, Debug, Display, Formatter};
 
-use crate::{value::Compound, Value};
+use dumpster::unsync::Gc;
+
+use crate::{Value, value::Compound};
 
 impl Compound {
     fn fmt_generic(&self, f: &mut Formatter<'_>) -> fmt::Result {
@@ -16,7 +18,7 @@ impl Compound {
     fn fmt_list(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "(")?;
 
-        let list = Value::Compound(self.clone().into());
+        let list = Value::Compound(Gc::new(self.clone()));
         for (i, value) in list.into_iter().enumerate() {
             if i > 0 {
                 write!(f, " ")?;
@@ -78,12 +80,11 @@ impl Display for Value {
                     write!(f, "{num}")
                 }
             }
-            Value::String(s) => Debug::fmt(s, f),
-            Value::Compound(compound) => Display::fmt(compound, f),
-            Value::Closure(fn_) => Display::fmt(fn_, f),
+            Value::String(s) => Debug::fmt(&**s, f),
+            Value::Compound(compound) => Display::fmt(&**compound, f),
+            Value::Closure(fn_) => Display::fmt(&**fn_, f),
             &Value::NativeFunction(fn_id) => {
-                let n = u32::from(fn_id);
-                write!(f, "(#native-fn {n})")
+                write!(f, "(#native-fn {fn_id})")
             }
         }
     }

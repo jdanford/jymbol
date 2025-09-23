@@ -1,4 +1,4 @@
-use gc::Gc;
+use dumpster::unsync::Gc;
 
 use crate::{function::Closure, symbol, value::Compound, FnId, Symbol, Value};
 

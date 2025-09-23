@@ -1,5 +1,5 @@
 use anyhow::anyhow;
-use gc::Gc;
+use dumpster::unsync::Gc;
 
 use crate::{value::Compound, Error, FnId, Result, Symbol, Value};
 
