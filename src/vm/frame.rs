@@ -1,19 +1,19 @@
 use crate::{FnId, Value};
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Compiled {
     pub fn_id: FnId,
     pub locals: Vec<Value>,
     pub pc: u32,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Native {
     pub fn_id: FnId,
     pub locals: Vec<Value>,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum Frame {
     Compiled(Compiled),
     Native(Native),

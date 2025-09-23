@@ -1,21 +1,21 @@
-use im::OrdSet;
+use im::HashSet;
 
 use crate::{Expr, Symbol};
 
-pub fn single(var: Symbol) -> OrdSet<Symbol> {
-    let mut vars = OrdSet::new();
+pub fn single(var: Symbol) -> HashSet<Symbol> {
+    let mut vars = HashSet::new();
     vars.insert(var);
     vars
 }
 
-pub fn list(vars: &[Symbol]) -> OrdSet<Symbol> {
+pub fn list(vars: &[Symbol]) -> HashSet<Symbol> {
     vars.iter().copied().collect()
 }
 
 impl Expr {
-    pub fn free_vars(&self) -> OrdSet<Symbol> {
+    pub fn free_vars(&self) -> HashSet<Symbol> {
         match self {
-            Expr::Value(_) => OrdSet::new(),
+            Expr::Value(_) => HashSet::new(),
             &Expr::Var(var) => single(var),
             Expr::List(exprs) | Expr::Do(exprs) => exprs.iter().map(Expr::free_vars).sum(),
             Expr::Call { fn_, args } => fn_.free_vars() + args.iter().map(Expr::free_vars).sum(),
@@ -30,8 +30,8 @@ impl Expr {
                 var_expr_pairs,
                 body,
             } => {
-                let mut vars = OrdSet::new();
-                let mut bound_vars = OrdSet::new();
+                let mut vars = HashSet::new();
+                let mut bound_vars = HashSet::new();
                 for (var, expr) in var_expr_pairs {
                     bound_vars.insert(*var);
                     let expr_vars = expr.free_vars().relative_complement(bound_vars.clone());
@@ -49,7 +49,7 @@ impl Expr {
                 cond_expr_pairs
                     .iter()
                     .map(|(cond, expr)| cond.free_vars() + expr.free_vars())
-                    .sum::<OrdSet<_>>()
+                    .sum::<HashSet<_>>()
                     + else_.free_vars()
             }
         }
