@@ -9,4 +9,5 @@ anyhow = "1.0"
 chumsky = "0.8"
 gc = { version = "0.5", features = ["derive"] }
 im = "15"
+intmap = "3.1"
 symbol_table = "0.3"

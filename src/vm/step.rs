@@ -4,7 +4,7 @@ use super::{frame, Frame};
 
 impl VM {
     pub(crate) fn step(&mut self, mut current_frame: frame::Compiled) -> Result<Option<Frame>> {
-        let func = self.compiled_functions.get(&current_frame.fn_id).unwrap();
+        let func = self.compiled_functions.get(current_frame.fn_id).unwrap();
         let inst = &func.code[current_frame.pc as usize];
         current_frame.pc += 1;
 

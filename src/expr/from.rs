@@ -81,8 +81,7 @@ impl Expr {
     pub fn try_from_application(fn_value: &Value, values: &[Value]) -> Result<Expr> {
         match fn_value {
             Value::Symbol(sym) => {
-                let name = sym.as_str();
-                if let Some(special_func) = special::FUNCTIONS.get(&name) {
+                if let Some(special_func) = special::FUNCTIONS.get(sym) {
                     special_func(values)
                 } else {
                     Expr::try_from_call(fn_value, values)

@@ -5,10 +5,7 @@ mod locals;
 
 use anyhow::anyhow;
 
-use crate::{
-    vm::ClosureType,
-    Inst, {Expr, FnId, Result, Symbol, VM},
-};
+use crate::{Arity, Expr, FnId, Inst, Result, Symbol, VM};
 
 use self::context::Context;
 
@@ -41,21 +38,17 @@ impl<'a> Compiler<'a> {
         Err(anyhow!("`{sym}` is not defined"))
     }
 
-    fn get_or_create_closure(
+    fn create_closure<A: Into<Arity>>(
         &mut self,
         mut context: Context,
-        closure_type: &ClosureType,
+        arity: A,
         body: &Expr,
     ) -> Result<(Context, FnId)> {
-        let fn_id = if let Some(fn_id) = self.vm.id_for_closure_type(closure_type) {
-            fn_id
-        } else {
-            context = self.compile(context, body)?;
-            context.code_mut().emit(Inst::Return);
+        context = self.compile(context, body)?;
+        context.code_mut().emit(Inst::Return);
 
-            let code = context.code_mut().extract();
-            self.vm.register_closure(closure_type, code)
-        };
+        let code = context.code_mut().extract();
+        let fn_id = self.vm.register_closure(arity, code);
 
         Ok((context, fn_id))
     }

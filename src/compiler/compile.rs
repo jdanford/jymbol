@@ -1,4 +1,4 @@
-use crate::{expr::vars, op, vm::ClosureType, Expr, Inst, Result, Symbol};
+use crate::{expr::vars, op, Expr, Inst, Result, Symbol};
 
 use super::{context::Context, Compiler};
 
@@ -108,15 +108,10 @@ impl Compiler<'_> {
         new_context.locals_mut().declare_all(&closure_vars)?;
         new_context.locals_mut().declare_all(params)?;
 
-        let closure_type = ClosureType {
-            arity: params.len(),
-            local_params: params.to_vec(),
-            captured_params: closure_vars.iter().copied().collect(),
-            body: body.clone(),
-        };
+        let arity = params.len();
 
         let fn_id;
-        (new_context, fn_id) = self.get_or_create_closure(new_context, &closure_type, body)?;
+        (new_context, fn_id) = self.create_closure(new_context, arity, body)?;
 
         let closure_value_count = closure_vars.len().try_into().unwrap();
         new_context
