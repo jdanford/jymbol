@@ -1,8 +1,11 @@
-use crate::{Inst, Result, Value, VM};
+use anyhow::anyhow;
 
-use super::{frame, Frame};
+use crate::{Inst, Result, VM, Value};
+
+use super::{Frame, frame};
 
 impl VM {
+    #[allow(clippy::too_many_lines)]
     pub(crate) fn step(&mut self, mut current_frame: frame::Compiled) -> Result<Option<Frame>> {
         let func = self.compiled_functions.get(current_frame.fn_id).unwrap();
         let inst = &func.code[current_frame.pc as usize];
@@ -90,6 +93,20 @@ impl VM {
             }
             Inst::Return => {
                 return Ok(None);
+            }
+            &Inst::Recur(frame_index, jmp_pc) => {
+                let mut new_frame = current_frame;
+
+                for _ in 0..frame_index {
+                    if let Some(Frame::Compiled(frame)) = self.frames.pop() {
+                        new_frame = frame;
+                    } else {
+                        return Err(anyhow!("invalid frame"));
+                    }
+                }
+
+                new_frame.pc = jmp_pc;
+                return Ok(Some(Frame::Compiled(new_frame)));
             }
         }
 

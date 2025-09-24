@@ -1,7 +1,7 @@
 use anyhow::anyhow;
 use dumpster::unsync::Gc;
 
-use crate::{value::Compound, Error, FnId, Result, Symbol, Value};
+use crate::{Error, FnId, Result, Symbol, Value, value::Compound};
 
 impl TryInto<Symbol> for Value {
     type Error = Error;

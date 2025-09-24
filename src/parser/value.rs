@@ -1,8 +1,8 @@
 use chumsky::prelude::*;
 
 use crate::{
-    parser::primitive::{float, string},
     Value,
+    parser::primitive::{float, string},
 };
 
 static NON_SYMBOL_CHARS: &str = "()[]{}\"'`,@.";

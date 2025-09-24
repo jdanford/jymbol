@@ -1,6 +1,6 @@
 use dumpster::unsync::Gc;
 
-use crate::{function::Closure, symbol, value::Compound, FnId, Symbol, Value};
+use crate::{FnId, Symbol, Value, function::Closure, symbol, value::Compound};
 
 impl From<Symbol> for Value {
     fn from(sym: Symbol) -> Self {
@@ -10,11 +10,7 @@ impl From<Symbol> for Value {
 
 impl From<bool> for Value {
     fn from(b: bool) -> Self {
-        if b {
-            Value::true_()
-        } else {
-            Value::false_()
-        }
+        if b { Value::true_() } else { Value::false_() }
     }
 }
 

@@ -1,7 +1,7 @@
 mod primitive;
 mod value;
 
-use chumsky::{prelude::Simple, Parser};
+use chumsky::{Parser, prelude::Simple};
 pub use value::value;
 
 use crate::{Error, Result};
@@ -21,7 +21,7 @@ pub fn parse<T, S: AsRef<str>>(
 
 #[cfg(test)]
 mod tests {
-    use crate::{parser, Result, Value};
+    use crate::{Result, Value, parser};
 
     fn parse_value<S: AsRef<str>>(s: S) -> Result<Value> {
         parser::parse(s, parser::value())

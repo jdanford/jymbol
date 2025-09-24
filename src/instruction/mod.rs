@@ -19,4 +19,5 @@ pub enum Inst {
     JumpIfNot(u32),
     Call(u16),
     Return,
+    Recur(u16, u32),
 }

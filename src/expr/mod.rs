@@ -1,7 +1,7 @@
 mod from;
 pub mod vars;
 
-use crate::{op, Symbol, Value};
+use crate::{Symbol, Value, op};
 
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
 pub enum Expr {
@@ -34,11 +34,11 @@ pub enum Expr {
         cond_expr_pairs: Vec<(Expr, Expr)>,
         else_: Box<Expr>,
     },
-    // Loop {
-    //     values: Vec<Expr>,
-    //     body: Box<Expr>,
-    // },
-    // Recur {
-    //     values: Vec<Expr>,
-    // },
+    Loop {
+        var_expr_pairs: Vec<(Symbol, Expr)>,
+        body: Box<Expr>,
+    },
+    Recur {
+        values: Vec<Expr>,
+    },
 }

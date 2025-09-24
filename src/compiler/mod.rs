@@ -24,12 +24,12 @@ impl<'a> Compiler<'a> {
     }
 
     fn lookup(&self, context: &Context, sym: Symbol) -> Result<(u16, u16)> {
-        if let Some(index) = context.locals().get_index(sym) {
+        if let Some(index) = context.locals.get_index(sym) {
             return Ok((0, index));
         }
 
         for (i, context) in self.contexts.iter().rev().enumerate() {
-            if let Some(index) = context.locals().get_index(sym) {
+            if let Some(index) = context.locals.get_index(sym) {
                 let frame_index = u16::try_from(i + 1).unwrap();
                 return Ok((frame_index, index));
             }
@@ -45,9 +45,9 @@ impl<'a> Compiler<'a> {
         body: &Expr,
     ) -> Result<(Context, FnId)> {
         context = self.compile(context, body)?;
-        context.code_mut().emit(Inst::Return);
+        context.code.emit(Inst::Return);
 
-        let code = context.code_mut().extract();
+        let code = context.code.extract();
         let fn_id = self.vm.register_closure(arity, code);
 
         Ok((context, fn_id))

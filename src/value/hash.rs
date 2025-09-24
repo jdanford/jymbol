@@ -1,6 +1,6 @@
 use std::hash::{Hash, Hasher};
 
-use crate::{symbol, Symbol, Value};
+use crate::{Symbol, Value, symbol};
 
 pub trait ValueHasher: Hasher {
     fn write_symbol(&mut self, sym: Symbol) {

@@ -17,6 +17,10 @@ impl Locals {
         }
     }
 
+    pub fn var_count(&self) -> usize {
+        self.vars.len()
+    }
+
     pub fn declare(&mut self, var: Symbol) -> Result<u16> {
         if self.indices.contains_key(&var) {
             return Err(anyhow!("`{var}` is already defined"));

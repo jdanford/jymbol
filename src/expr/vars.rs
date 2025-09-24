@@ -29,6 +29,10 @@ impl Expr {
             Expr::Let {
                 var_expr_pairs,
                 body,
+            }
+            | Expr::Loop {
+                var_expr_pairs,
+                body,
             } => {
                 let mut vars = HashSet::new();
                 let mut bound_vars = HashSet::new();
@@ -52,6 +56,7 @@ impl Expr {
                     .sum::<HashSet<_>>()
                     + else_.free_vars()
             }
+            Expr::Recur { values } => values.iter().flat_map(Expr::free_vars).collect(),
         }
     }
 }

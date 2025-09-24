@@ -24,7 +24,7 @@ pub use env::Env;
 pub use error::{Error, Result};
 pub use expr::Expr;
 pub use function::FnId;
-pub use instruction::{op, Inst};
+pub use instruction::{Inst, op};
 pub use iterator::ResultIterator;
 pub use module::Module;
 pub use symbol::Symbol;

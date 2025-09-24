@@ -1,4 +1,4 @@
-use crate::{symbol, try_as_array, Module, Result, Value};
+use crate::{Module, Result, Value, symbol, try_as_array};
 
 fn type_(values: &[Value]) -> Result<Value> {
     let [value] = try_as_array(values)?;

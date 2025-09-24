@@ -1,17 +1,19 @@
-use crate::{expr::vars, op, Expr, Inst, Result, Symbol};
+use anyhow::anyhow;
 
-use super::{context::Context, Compiler};
+use crate::{Arity, Expr, Inst, Result, Symbol, compiler::context::LoopContext, expr::vars, op};
+
+use super::{Compiler, context::Context};
 
 impl Compiler<'_> {
     pub fn compile(&mut self, mut context: Context, expr: &Expr) -> Result<Context> {
         match expr {
             Expr::Value(value) => {
-                context.code_mut().emit(Inst::Value(value.clone()));
+                context.code.emit(Inst::Value(value.clone()));
                 Ok(context)
             }
             &Expr::Var(sym) => {
                 let (frame_index, index) = self.lookup(&context, sym)?;
-                context.code_mut().emit(Inst::Get(frame_index, index));
+                context.code.emit(Inst::Get(frame_index, index));
                 Ok(context)
             }
             Expr::List(exprs) => self.compile_list(context, exprs),
@@ -28,6 +30,11 @@ impl Compiler<'_> {
                 cond_expr_pairs,
                 else_,
             } => self.compile_if(context, cond_expr_pairs, else_),
+            Expr::Loop {
+                var_expr_pairs,
+                body,
+            } => self.compile_loop(context, var_expr_pairs, body),
+            Expr::Recur { values } => self.compile_recur(context, values),
         }
     }
 
@@ -37,7 +44,7 @@ impl Compiler<'_> {
         }
 
         let value_count = u16::try_from(exprs.len()).unwrap();
-        context.code_mut().emit(Inst::List(value_count));
+        context.code.emit(Inst::List(value_count));
 
         Ok(context)
     }
@@ -45,11 +52,11 @@ impl Compiler<'_> {
     fn compile_do(&mut self, mut context: Context, exprs: &[Expr]) -> Result<Context> {
         for expr in exprs {
             context = self.compile(context, expr)?;
-            context.code_mut().emit(Inst::Drop);
+            context.code.emit(Inst::Drop);
         }
 
         let value_count = u16::try_from(exprs.len()).unwrap();
-        context.code_mut().emit(Inst::List(value_count));
+        context.code.emit(Inst::List(value_count));
 
         Ok(context)
     }
@@ -61,7 +68,7 @@ impl Compiler<'_> {
         expr: &Expr,
     ) -> Result<Context> {
         context = self.compile(context, expr)?;
-        context.code_mut().emit(Inst::UnOp(unop));
+        context.code.emit(Inst::UnOp(unop));
         Ok(context)
     }
 
@@ -74,7 +81,7 @@ impl Compiler<'_> {
     ) -> Result<Context> {
         context = self.compile(context, left)?;
         context = self.compile(context, right)?;
-        context.code_mut().emit(Inst::BinOp(binop));
+        context.code.emit(Inst::BinOp(binop));
         Ok(context)
     }
 
@@ -86,7 +93,7 @@ impl Compiler<'_> {
         context = self.compile(context, fn_)?;
 
         let arity = args.len().try_into().unwrap();
-        context.code_mut().emit(Inst::Call(arity));
+        context.code.emit(Inst::Call(arity));
         Ok(context)
     }
 
@@ -102,39 +109,39 @@ impl Compiler<'_> {
             context = self.compile(context, &Expr::var(var))?;
         }
 
+        let mut new_context = Context::fn_(&context);
         self.contexts.push(context);
 
-        let mut new_context = Context::new();
-        new_context.locals_mut().declare_all(&closure_vars)?;
-        new_context.locals_mut().declare_all(params)?;
+        new_context.locals.declare_all(&closure_vars)?;
+        new_context.locals.declare_all(params)?;
 
         let arity = params.len();
 
         let fn_id;
-        (new_context, fn_id) = self.create_closure(new_context, arity, body)?;
+        (_, fn_id) = self.create_closure(new_context, arity, body)?;
 
         let closure_value_count = closure_vars.len().try_into().unwrap();
-        new_context
-            .code_mut()
+        let mut old_context = self.contexts.pop().unwrap();
+        old_context
+            .code
             .emit(Inst::Closure(fn_id, closure_value_count));
 
-        Ok(self.contexts.pop().unwrap())
+        Ok(old_context)
     }
 
     fn compile_let(
         &mut self,
-        context: Context,
+        mut context: Context,
         var_expr_pairs: &[(Symbol, Expr)],
         body: &Expr,
     ) -> Result<Context> {
-        let mut extended_context = context.extend();
         for (var, expr) in var_expr_pairs {
-            extended_context = self.compile(extended_context, expr)?;
-            let index = extended_context.locals_mut().declare(*var)?;
-            extended_context.code_mut().emit(Inst::Set(0, index));
+            context = self.compile(context, expr)?;
+            let index = context.locals.declare(*var)?;
+            context.code.emit(Inst::Set(0, index));
         }
 
-        self.compile(extended_context, body)
+        self.compile(context, body)
     }
 
     fn compile_if(
@@ -148,23 +155,23 @@ impl Compiler<'_> {
         let mut exit_points = Vec::new();
 
         for (cond, expr) in cond_expr_pairs {
-            let entry_point = context.code().pc();
+            let entry_point = context.code.pc();
             entry_points.push(entry_point);
 
             context = self.compile(context, cond)?;
-            let branch_point = context.code_mut().bookmark();
+            let branch_point = context.code.bookmark();
             branch_points.push(branch_point);
 
             context = self.compile(context, expr)?;
-            let exit_point = context.code_mut().bookmark();
+            let exit_point = context.code.bookmark();
             exit_points.push(exit_point);
         }
 
-        let else_entry_point = context.code().pc();
+        let else_entry_point = context.code.pc();
         entry_points.push(else_entry_point);
 
         context = self.compile(context, else_)?;
-        let end = context.code().pc();
+        let end = context.code.pc();
 
         for i in 0..branch_points.len() {
             let next_entry_point = entry_points[i + 1];
@@ -172,11 +179,72 @@ impl Compiler<'_> {
             let exit_point = exit_points[i];
 
             context
-                .code_mut()
+                .code
                 .patch(branch_point, Inst::JumpIfNot(next_entry_point));
-            context.code_mut().patch(exit_point, Inst::Jump(end));
+            context.code.patch(exit_point, Inst::Jump(end));
         }
 
+        Ok(context)
+    }
+
+    fn compile_loop(
+        &mut self,
+        mut context: Context,
+        var_expr_pairs: &[(Symbol, Expr)],
+        body: &Expr,
+    ) -> Result<Context> {
+        if context.in_loop() {
+            return Err(anyhow!("Nested loops aren't supported"));
+        }
+
+        let locals_offset = u16::try_from(context.locals.var_count())?;
+
+        for (var, expr) in var_expr_pairs {
+            context = self.compile(context, expr)?;
+            let index = context.locals.declare(*var)?;
+            context.code.emit(Inst::Set(0, index));
+        }
+
+        let loop_body_pc = context.code.pc();
+        let loop_arity = Arity::Exactly(var_expr_pairs.len());
+
+        context.loop_context = Some(LoopContext {
+            frame_offset: 0,
+            locals_offset,
+            loop_body_pc,
+            loop_arity,
+        });
+        self.compile(context, body)
+    }
+
+    fn compile_recur(&mut self, mut context: Context, exprs: &[Expr]) -> Result<Context> {
+        let Some(loop_context) = context.loop_context else {
+            return Err(anyhow!("Can't use recur outside of loop"));
+        };
+
+        let mut set_indices: Vec<u16> = Vec::new();
+
+        let actual_arity = exprs.len();
+        let expected_arity = loop_context.loop_arity;
+        expected_arity.check(actual_arity)?;
+
+        for (index_usize, expr) in exprs.iter().enumerate() {
+            let index = u16::try_from(index_usize)?;
+            context = self.compile(context, expr)?;
+            set_indices.push(index);
+        }
+
+        for &relative_index in set_indices.iter().rev() {
+            let index = loop_context.locals_offset + relative_index;
+            context
+                .code
+                .emit(Inst::Set(loop_context.frame_offset, index));
+        }
+
+        context.code.emit(Inst::Recur(
+            loop_context.frame_offset,
+            loop_context.loop_body_pc,
+        ));
         Ok(context)
     }
 }

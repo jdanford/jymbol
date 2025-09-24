@@ -89,3 +89,16 @@ impl Display for Value {
         }
     }
 }
+
+impl Debug for Value {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Value::Symbol(sym) => f.debug_tuple("Symbol").field(sym).finish(),
+            Value::Number(num) => f.debug_tuple("Number").field(num).finish(),
+            Value::String(string) => f.debug_tuple("String").field(&**string).finish(),
+            Value::Compound(compound) => f.debug_tuple("Compound").field(&**compound).finish(),
+            Value::Closure(closure) => f.debug_tuple("Closure").field(&**closure).finish(),
+            Value::NativeFunction(fn_id) => f.debug_tuple("NativeFunction").field(fn_id).finish(),
+        }
+    }
+}

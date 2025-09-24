@@ -1,6 +1,6 @@
 use anyhow::anyhow;
 
-use crate::{op, special, try_as_array, Error, Expr, Result, ResultIterator, Symbol, Value};
+use crate::{Error, Expr, Result, ResultIterator, Symbol, Value, op, special, try_as_array};
 
 fn check_var_is_valid(var: Symbol) -> Result<()> {
     if special::VARS.contains(&var) {
@@ -62,6 +62,22 @@ impl Expr {
         }
     }
 
+    pub fn loop_(var_expr_pairs: Vec<(Symbol, Expr)>, body: Expr) -> Result<Self> {
+        for &(var, _) in &var_expr_pairs {
+            check_var_is_valid(var)?;
+        }
+
+        Ok(Expr::Loop {
+            var_expr_pairs,
+            body: Box::new(body),
+        })
+    }
+
+    pub fn try_from_recur(raw_values: &[Value]) -> Result<Self> {
+        let values = raw_values.iter().map(Expr::try_from).try_collect()?;
+        Ok(Expr::Recur { values })
+    }
+
     fn try_from_value(value: &Value) -> Result<Expr> {
         match value {
             &Value::Symbol(sym) => Ok(Expr::var(sym)),
@@ -87,8 +103,7 @@ impl Expr {
                     Expr::try_from_call(fn_value, values)
                 }
             }
-            Value::Closure(_) | Value::NativeFunction(_) => Expr::try_from_call(fn_value, values),
-            _ => Err(anyhow!("can't apply {fn_value}")),
+            _ => Expr::try_from_call(fn_value, values),
         }
     }
 
@@ -135,7 +150,11 @@ impl Expr {
 
     pub fn try_from_let(values: &[Value]) -> Result<Expr> {
         match values {
-            [var_value_pairs @ .., body_value] if var_value_pairs.len() >= 2 => {
+            [var_value_pairs @ .., body_value] => {
+                if var_value_pairs.len() % 2 != 0 {
+                    return Err(anyhow!("malformed `let` expression"));
+                }
+
                 let var_expr_pairs = var_value_pairs
                     .chunks_exact(2)
                     .map(Expr::try_from_var_expr_pair)
@@ -157,7 +176,11 @@ impl Expr {
 
     pub fn try_from_if(values: &[Value]) -> Result<Expr> {
         match values {
-            [cond_value_pairs @ .., else_value] if cond_value_pairs.len() >= 2 => {
+            [cond_value_pairs @ .., else_value] => {
+                if cond_value_pairs.len() % 2 != 0 {
+                    return Err(anyhow!("malformed `if` expression"));
+                }
+
                 let cond_expr_pairs = cond_value_pairs
                     .chunks_exact(2)
                     .map(Expr::try_from_cond_expr_pair)
@@ -174,6 +197,25 @@ impl Expr {
             Result::Ok((cond_value.try_into()?, expr_value.try_into()?))
         } else {
             Err(anyhow!("malformed `if` expression"))
+        }
+    }
+
+    pub fn try_from_loop(values: &[Value]) -> Result<Expr> {
+        match values {
+            [var_value_pairs_list, body_value] => {
+                let var_value_pairs: Vec<Value> = var_value_pairs_list.iter().cloned().collect();
+                if var_value_pairs.len() % 2 != 0 {
+                    return Err(anyhow!("malformed `loop` expression"));
+                }
+
+                let var_expr_pairs = var_value_pairs
+                    .chunks_exact(2)
+                    .map(Expr::try_from_var_expr_pair)
+                    .try_collect()?;
+                let body = body_value.try_into()?;
+                Expr::loop_(var_expr_pairs, body)
+            }
+            _ => Err(anyhow!("malformed `loop` expression")),
         }
     }
 }

@@ -1,7 +1,7 @@
 use anyhow::anyhow;
 use dumpster::Trace;
 
-use crate::{symbol, try_as_array, Result, Symbol, Value};
+use crate::{Result, Symbol, Value, symbol, try_as_array};
 
 #[derive(Clone, PartialEq, Debug, Trace)]
 pub struct Compound {
